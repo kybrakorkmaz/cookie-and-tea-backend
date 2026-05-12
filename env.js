@@ -8,19 +8,16 @@ const envSchema = z.object({
         .enum(["development", "production", "test"])
         .default("development"),
     PORT: z
-        .string()
-        .default("8000")
-        .refine((port)=> {
-                const parsed = parseInt(port, 10);
-                return parsed > 0 && parsed < 65536;
-        }),
-    BASE_URL: z
-        .string()
-        .refine(
-            (url) => url.startsWith("http://") || url.startsWith("https://"),
-            "Invalid URL format"
-        ),
-    DATABASE_URL: z.string().min(1, "Invalid database format"),
+        .coerce.number().int()
+        .min(1, { message: "Port must be >= 1" })
+        .max(65535, { message: "Port must be <= 65535" })
+        .default(8000),
+    BASE_URL: z.url({ message: "Invalid URL format" }),
+    DATABASE_URL: z
+        .url({ message: "Invalid database URL format" }).refine((url) =>
+            url.startsWith("postgres://") || url.startsWith("postgresql://") ||
+            url.startsWith("mysql://"),
+            { message: "Database URL must use a supported scheme (postgres://, mysql://, etc.)" })
 });
 
 // Parse and export

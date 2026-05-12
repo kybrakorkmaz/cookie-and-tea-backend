@@ -141,3 +141,11 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# IDE-specific files
+.idea/workspace.xml
+.idea/usage.statistics.xml
+.idea/shelf/
+
+.idea
+.DS_Store

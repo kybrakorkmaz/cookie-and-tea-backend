@@ -1,5 +1,5 @@
 import {ENV} from "./env.js"
-/** @type import("drizzle-kit").Config*/
+/** @type {import("drizzle-kit").Config} */
 export default {
     schema: "./src/db/client.js", // entry point schema
     out: "./src/db/migrations",  // migration output folder

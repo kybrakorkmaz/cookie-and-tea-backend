@@ -10,7 +10,7 @@ RUN apk add --no-cache libc6-compat
 # ============================================
 
 FROM base AS development
-ENV NODE_EV=development
+ENV NODE_ENV=development
 COPY package*.json ./
 RUN npm install
 COPY . .
@@ -33,6 +33,6 @@ USER nodejs
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-CMD node srs/server/health.js
+CMD node src/server/health.js
 
-CMD["npm", "start"]
+CMD ["npm", "start"]

@@ -1,9 +1,9 @@
 import { checkDatabaseConnection} from "../db/checkConnection.js";
 
-(async () =>{
+(async () => {
     const result = await checkDatabaseConnection();
     if(result.success){
-        console.log("Health check paased", result.message);
+        console.log("Health check passed", result.message);
         process.exit(0);
     }
 

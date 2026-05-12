@@ -1,13 +1,13 @@
 import {sql} from "./client.js";
-export const checkDatabaseConnection = async () =>{
+export const checkDatabaseConnection = async () => {
     try {
         await sql`SELECT 1`;
 
-        return{
+        return {
             success: true,
             message: "Database connected",
         };
-    }catch (error) {
+    } catch (error) {
         return {
             success: false,
             message: error.message,

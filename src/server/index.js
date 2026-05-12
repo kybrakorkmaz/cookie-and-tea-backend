@@ -14,7 +14,7 @@ app.get("/", (req, res) => {
     });
 });
 
-app.get("/health", async (req, res) =>{
+app.get("/health", async (req, res) => {
     const result = await checkDatabaseConnection();
 
     if(!result.success){
@@ -28,9 +28,17 @@ app.get("/health", async (req, res) =>{
     return res.status(200).json({
         status: "ok",
         database: "connected",
-    })
-})
+    });
+});
 
-app.listen(ENV.PORT, ()=>{
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({
+        status: "error",
+        message: ENV.NODE_ENV === "production" ? "Internal server error" : err.message,
+    });
+});
+
+app.listen(ENV.PORT, () => {
     console.log(`Server running at ${ENV.BASE_URL}:${ENV.PORT}`);
 });
