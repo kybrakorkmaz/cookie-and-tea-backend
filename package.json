@@ -1,0 +1,42 @@
+{
+  "name": "cookie-and-tea-backend",
+  "version": "1.0.0",
+  "description": "creator support app like Buy Me a Coffee or Ko-fi.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node --watch src/server/index.js",
+    "start": "node src/server/index.js",
+    "health": "node src/server/health.js",
+    "db:generate": "drizzle-kit generate",
+    "db:push": "drizzle-kit push",
+    "db:migrate": "drizzle-kit migrate",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f",
+    "test": "cross-env NODE_ENV=test jest --runInBand"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kybrakorkmaz/cookie-and-tea-backend.git"
+  },
+  "keywords": [],
+  "author": "Kubra Korkmaz",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/kybrakorkmaz/cookie-and-tea-backend/issues"
+  },
+  "homepage": "https://github.com/kybrakorkmaz/cookie-and-tea-backend#readme",
+  "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
+    "dotenv": "^17.4.2",
+    "drizzle-orm": "^0.45.2",
+    "express": "^5.2.1",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "cross-env": "^10.1.0",
+    "drizzle-kit": "^0.31.10",
+    "jest": "^30.4.2"
+  }
+}
