@@ -6,14 +6,18 @@
   "scripts": {
     "dev": "node --watch src/server/index.js",
     "start": "node src/server/index.js",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "health": "node src/server/health.js",
     "db:generate": "drizzle-kit generate",
-    "db:push": "drizzle-kit push",
+    "db:push": "cross-env node --env-file=.env drizzle-kit push",
+    "db:push:test": "cross-env node --env-file=.env.test drizzle-kit push",
     "db:migrate": "drizzle-kit migrate",
-    "docker:up": "docker compose up -d",
-    "docker:down": "docker compose down",
-    "docker:logs": "docker compose logs -f",
-    "test": "cross-env NODE_ENV=test jest --runInBand"
+    "docker:up": "docker compose -f docker-compose.dev.yml up -d",
+    "docker:down": "docker compose -f docker-compose.dev.yml down",
+    "docker:down:volumes": "docker compose -f docker-compose.dev.yml down -v",
+    "docker:logs": "docker compose -f docker-compose.dev.yml logs -f",
+    "test": "cross-env NODE_ENV=test node --env-file=.env.test node_modules/.bin/jest --runInBand"
   },
   "repository": {
     "type": "git",
@@ -32,11 +36,14 @@
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
     "express": "^5.2.1",
+    "postgres": "^3.4.9",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "cross-env": "^10.1.0",
     "drizzle-kit": "^0.31.10",
+    "eslint": "^9.39.4",
+    "eslint-plugin-import": "^2.32.0",
     "jest": "^30.4.0"
   }
 }
