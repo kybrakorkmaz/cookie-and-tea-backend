@@ -5,6 +5,7 @@ import * as schema from "./schema/index.js";
 import {ENV} from "../../env.js";
 import postgres from "postgres";
 import {drizzle as drizzleLocal} from "drizzle-orm/postgres-js";
+import {dbLogger} from "../lib/logger.js";
 
 let db;
 let sql;
@@ -20,7 +21,7 @@ if(ENV.NODE_ENV === "production"){
     const client = postgres(ENV.DATABASE_URL, {
         // Optional: set max connections for local dev
         max: ENV.NODE_ENV === "test" ? 1 : 10,
-        onnotice: ENV.NODE_ENV === "development" ? console.log : undefined
+        onnotice: ENV.NODE_ENV === "development" ? dbLogger.info : undefined
     });
     sql = client;
     db = drizzleLocal(client, { schema });

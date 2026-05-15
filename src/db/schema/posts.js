@@ -1,4 +1,4 @@
-import { integer, pgEnum, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { integer, pgEnum, pgTable, text, timestamp, check, sql } from "drizzle-orm/pg-core";
 import { users, timestamps } from "./auth.js";
 
 /*
@@ -49,7 +49,9 @@ export const donations = pgTable("donations", {
 
     amount: integer("amount").notNull(), // Stored in cents/smallest unit
     createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, () => ({
+    amountCheckConstraint: check("amount_non_negative", sql`amount >= 0`),
+}));
 
 export const comments = pgTable("comments", {
     id: integer("id").primaryKey().generatedAlwaysAsIdentity(),

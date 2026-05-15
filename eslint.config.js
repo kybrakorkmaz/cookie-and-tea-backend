@@ -13,8 +13,6 @@ export default [
                 process: "readonly",
                 console: "readonly",
                 setTimeout: "readonly",
-                // This allows the use of 'node' globals without errors
-                __dirname: "readonly",
             },
         },
 
@@ -29,7 +27,7 @@ export default [
             "no-console": "off",             // Allow console.logs for backend debugging
             "prefer-const": "error",         // Suggests 'const' if variable isn't reassigned
             "eqeqeq": ["error", "always"],   // Forces '===' instead of '=='
-            "import/extensions": ["error", "always"], // Forces .js in imports (required for Node ESM)
+            "import/extensions": ["error", "ignorePackages"], // Allow package imports without .js, but require it for local imports
         },
     },
 ];

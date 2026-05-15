@@ -1,4 +1,4 @@
-import { index, integer, pgEnum, pgTable, text, unique, foreignKey } from "drizzle-orm/pg-core";
+import { index, integer, pgEnum, pgTable, text, unique, check, sql, uniqueIndex } from "drizzle-orm/pg-core";
 import { users, timestamps } from "./auth.js";
 
 // External social media platforms supported by your API
@@ -25,6 +25,8 @@ export const follows = pgTable("follows", {
     followingIdx: index("following_idx").on(table.followingId),
     // Ensures a user cannot follow the same person twice
     uniqueFollow: unique("unique_follow").on(table.followerId, table.followingId),
+    // Prevent self-follows
+    noSelfFollow: check("no_self_follow", sql`follower_id <> following_id`),
 }));
 
 // DM Conversation Room table
@@ -39,8 +41,12 @@ export const conversations = pgTable("conversations", {
 
     ...timestamps
 }, (table) => ({
-    // Ensures only one unique conversation exists between any two users
-    uniqueChat: unique("unique_conversation").on(table.userOneId, table.userTwoId),
+    // Ensures only one unique conversation exists between any two users (regardless of order)
+    // Uses LEAST/GREATEST to normalize the pair so (1,2) and (2,1) map to the same constraint
+    uniqueChat: uniqueIndex("unique_conversation").on(
+        sql`LEAST(${table.userOneId}, ${table.userTwoId})`,
+        sql`GREATEST(${table.userOneId}, ${table.userTwoId})`
+    ),
     userOneIdx: index("user_one_idx").on(table.userOneId),
     userTwoIdx: index("user_two_idx").on(table.userTwoId),
 }));
