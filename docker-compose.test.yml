@@ -23,12 +23,10 @@ services:
   postgres:
     image: postgres:17-alpine
     container_name: cat_test_postgres
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=strongdevpass123
-      - POSTGRES_DB=cat_test
+    env_file:
+      - .env.test
     ports:
-      - "5433:5432"
+      - "127.0.0.1:5433:5432"
     volumes:
       - postgres_test_data:/var/lib/postgresql/data
       # do not mount init.sql for test compose to avoid init script failure if DB exists

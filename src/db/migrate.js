@@ -7,11 +7,23 @@ import postgres from "postgres";
 import fs from "fs";
 import { ENV } from "../../env.js";
 
+// Helper to safely detect if running inside Docker
+function isRunningInDocker() {
+    if (process.env.IN_DOCKER === "1") return true;
+    if (process.platform !== "linux") return false;
+    if (fs.existsSync("/.dockerenv")) return true;
+    try {
+        return fs.readFileSync("/proc/1/cgroup", "utf8").includes("docker");
+    } catch {
+        return false;
+    }
+}
+
 async function runMigration() {
     console.log("Migration sequence initialized...");
 
-    const dbUrl = ENV.DATABASE_URL || "postgres://postgres:strongdevpass123@localhost:5432/cat_dev";
-    const nodeEnv = ENV.NODE_ENV || "development";
+    const dbUrl = ENV.DATABASE_URL;
+    const nodeEnv = ENV.NODE_ENV;
 
     console.log(`Target Environment Validated: ${nodeEnv}`);
 
@@ -35,15 +47,7 @@ async function runMigration() {
         // Inside Docker container network layouts, replace 'localhost' with the service alias 'postgres'
         let connectionString = dbUrl;
 
-        // Detect if running inside Docker/container. Prefer explicit ENV override (IN_DOCKER=1),
-        // otherwise use common Docker indicators on Linux.
-        const inDocker = process.env.IN_DOCKER === "1" || (
-            process.platform === "linux" && (
-                fs.existsSync("/.dockerenv") || (fs.existsSync("/proc/1/cgroup") && fs.readFileSync("/proc/1/cgroup", "utf8").includes("docker"))
-            )
-        );
-
-        if (inDocker && connectionString.includes("@localhost:")) {
+        if (isRunningInDocker() && connectionString.includes("@localhost:")) {
             connectionString = connectionString.replace("@localhost:", "@postgres:");
         }
 

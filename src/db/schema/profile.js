@@ -58,7 +58,7 @@ export const messages = pgTable("messages", {
     conversationId: integer("conversation_id")
         .notNull()
         .references(() => conversations.id, { onDelete: "cascade" }),
-    senderId: integer("sender_id").notNull().references(() => users.id),
+    senderId: integer("sender_id").notNull().references(() => users.id, { onDelete: "cascade" }),
     content: text("content").notNull(),
     ...timestamps
 }, (table) => ({

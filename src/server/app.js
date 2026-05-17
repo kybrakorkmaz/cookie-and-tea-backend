@@ -9,7 +9,7 @@ app.use(express.json());
 
 app.get("/", (req, res) => {
     res.json({
-        message: "Cookie and TTea API",
+        message: "Cookie and Tea API",
         environment: ENV.NODE_ENV,
     });
 });
@@ -18,10 +18,11 @@ app.get("/health", async (req, res) => {
     const result = await checkDatabaseConnection();
 
     if(!result.success){
+        console.error("Health check failed:", result.message);
         return res.status(500).json({
             status: "error",
             database: "disconnected",
-            message: result.message,
+            message: "Database connection error",
         });
     }
 
