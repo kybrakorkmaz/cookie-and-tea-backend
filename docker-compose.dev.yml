@@ -13,8 +13,11 @@ services:
     volumes:
       - .:/app
       - /app/node_modules
+      - ./.env.test:/app/.env.test
     env_file:
       - .env
+    environment:
+      - IN_DOCKER=1
 
     depends_on:
       postgres:
@@ -26,10 +29,11 @@ services:
 
   postgres:
     image: postgres:17-alpine
-
     container_name: cat_postgres
-    env_file:
-      - .env
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=strongdevpass123
+      - POSTGRES_DB=cat_dev
     ports:
       - "5432:5432"
 
@@ -48,8 +52,9 @@ services:
     container_name: cat_pgadmin
     ports:
       - "5050:80"
-    env_file:
-      - .env
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@local.com
+      - PGADMIN_DEFAULT_PASSWORD=admin
     depends_on:
       - postgres
 volumes:

@@ -1,4 +1,5 @@
-import { index, integer, pgEnum, pgTable, text, unique, check, sql, uniqueIndex } from "drizzle-orm/pg-core";
+import { index, integer, pgEnum, pgTable, text, unique, check, uniqueIndex } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { users, timestamps } from "./auth.js";
 
 // External social media platforms supported by your API

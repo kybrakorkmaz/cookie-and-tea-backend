@@ -17,8 +17,9 @@ if(ENV.NODE_ENV === "production"){
     db = drizzleNeon(client, { schema });
 }else{
     // DEVELOPMENT/TEST: Local Postgres (TCP/Binary)
+    const localDbUrl = ENV.DATABASE_URL || "postgres://postgres:strongdevpass123@localhost:5432/cat_dev";
     // Connects to your local Docker container.
-    const client = postgres(ENV.DATABASE_URL, {
+    const client = postgres(localDbUrl, {
         // Optional: set max connections for local dev
         max: ENV.NODE_ENV === "test" ? 1 : 10,
         onnotice: ENV.NODE_ENV === "development" ? dbLogger.info : undefined

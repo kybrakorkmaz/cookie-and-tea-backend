@@ -1,4 +1,5 @@
-import { integer, pgEnum, pgTable, text, timestamp, check, sql } from "drizzle-orm/pg-core";
+import { integer, pgEnum, pgTable, text, timestamp, check} from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { users, timestamps } from "./auth.js";
 
 /*
