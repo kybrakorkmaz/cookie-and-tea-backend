@@ -10,12 +10,14 @@ services:
     ports:
       - "8000:8000"
 
-    env_file:
-      - .env
-
     volumes:
       - .:/app
       - /app/node_modules
+      - ./.env.test:/app/.env.test
+    env_file:
+      - .env
+    environment:
+      - IN_DOCKER=1
 
     depends_on:
       postgres:
@@ -27,19 +29,15 @@ services:
 
   postgres:
     image: postgres:17-alpine
-
-    container_name: cat-postgres
-
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-
+    container_name: cat_postgres
+    env_file:
+      - .env
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
 
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./src/scripts/sql/init.sql:/docker-entrypoint-initdb.d/init.sql
 
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
@@ -47,5 +45,14 @@ services:
       timeout: 5s
       retries: 5
 
+  pgAdmin:
+    image: dpage/pgadmin4
+    container_name: cat_pgadmin
+    ports:
+      - "127.0.0.1:5050:80"
+    env_file:
+      - .env
+    depends_on:
+      - postgres
 volumes:
   postgres_data:

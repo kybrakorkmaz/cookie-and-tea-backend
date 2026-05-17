@@ -1,12 +1,17 @@
-import {ENV} from "./env.js"
-/** @type {import("drizzle-kit").Config} */
-export default {
-    schema: "./src/db/client.js", // entry point schema
-    out: "./src/db/migrations",  // migration output folder
-    dialect: "postgresql",       // database dialect
-    dbCredentials:{
-        url:ENV.DATABASE_URL,    // Neon connection string
+import { defineConfig } from "drizzle-kit";
+
+if (!process.env.DATABASE_URL) {
+    console.error("ERROR: DATABASE_URL environment variable is required");
+    process.exit(1);
+}
+
+export default defineConfig({
+    schema: "./src/db/schema/index.js",
+    out: "./src/db/migrations",
+    dialect: "postgresql",
+    dbCredentials: {
+        url: process.env.DATABASE_URL,
     },
     verbose: true,
-    strict: true
-}
+    strict: true,
+});
