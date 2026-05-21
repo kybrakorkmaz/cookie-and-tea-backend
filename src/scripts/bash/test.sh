@@ -17,10 +17,22 @@ case $COMMAND in
   run)
     echo "Running full test suite in Docker..."
     $0 up
+    
+    # Setup cleanup trap for run command
+    cleanup() {
+      echo "Interrupt received, cleaning up..."
+      $0 down
+      exit 1
+    }
+    trap cleanup INT TERM
+
     $0 migrate
     echo "Executing tests..."
     docker compose -p $PROJECT_NAME -f $COMPOSE_FILE exec api npm test
     RESULT=$?
+    
+    # Remove trap before explicit cleanup
+    trap - INT TERM
     $0 down
     exit $RESULT
     ;;

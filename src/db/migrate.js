@@ -40,9 +40,9 @@ async function runMigration() {
         // and also reset the port to default 5432 since containers communicate on internal ports.
         let connectionString = dbUrl;
 
-        if (isRunningInDocker() && connectionString.includes("@localhost:")) {
-            // Replaces @localhost:PORT with @postgres:5432
-            connectionString = connectionString.replace(/@localhost:\d+/, "@postgres:5432");
+        if (isRunningInDocker()) {
+            // Replaces @localhost[:PORT] with @postgres:5432 while preserving path
+            connectionString = connectionString.replace(/@localhost(?::\d+)?(\/|$)/, "@postgres:5432$1");
         }
 
         const sqlClient = postgres(connectionString);

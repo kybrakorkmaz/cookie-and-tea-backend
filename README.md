@@ -20,7 +20,19 @@ The core logic resides in `src/scripts/bash/`:
 - `prod.sh`: Manages the production stack.
 
 Usage: `bash src/scripts/bash/<script>.sh [command]`
-Common commands: `up`, `down`, `logs`, `migrate`, `restart`.
+
+### Script Command Matrix
+
+| Command   | `dev.sh` | `test.sh` | `prod.sh` | Notes |
+|-----------|:--------:|:---------:|:---------:|-------|
+| `up`      | ✓        | ✓         | ✓         | Starts the environment. |
+| `down`    | ✓        | ✓         | ✓         | Stops and removes containers. |
+| `logs`    | ✓        | ✓         | ✓         | Follows container logs. |
+| `migrate` | ✓        | ✓         | -         | Runs migrations in the container. |
+| `run`     | -        | ✓         | -         | Full cycle: up → migrate → test → down. |
+| `restart` | ✓        | -         | -         | Restarts development containers. |
+| `ps`      | ✓        | -         | ✓         | Lists container status. |
+| `-v` flag | ✓        | ✓         | ✓         | Can be added to `down` to remove volumes. |
 
 ---
 

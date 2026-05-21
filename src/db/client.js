@@ -21,7 +21,7 @@ if(ENV.NODE_ENV === "production"){
 
     // Inside Docker, containers communicate via service names and internal ports
     if (process.env.IN_DOCKER === "1") {
-        localDbUrl = localDbUrl.replace(/@localhost:\d+/, "@postgres:5432");
+        localDbUrl = localDbUrl.replace(/@localhost(?::\d+)?(\/|$)/, "@postgres:5432$1");
     }
 
     // Connects to your local Docker container.
