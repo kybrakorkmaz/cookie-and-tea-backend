@@ -1,20 +1,15 @@
 services:
   app:
+    extends:
+      file: docker-compose.base.yml
+      service: api-base
     build:
-      context: .
-      dockerfile: Dockerfile
       target: production
-
     container_name: cat_prod
-
     ports:
-      - "8000:8000"
-
+      - "${API_PORT:-8000}:8000"
     env_file:
       - .env.production
-
-    restart: unless-stopped
-
     healthcheck:
       test: ["CMD", "node", "src/server/health.js"]
       interval: 30s

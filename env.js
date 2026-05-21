@@ -21,6 +21,7 @@ const envSchema = z.object({
             return false;
         }
     }, { message: "Invalid DB URL scheme (must be postgres:// or postgresql://)" }),
+    JWT_SECRET: z.string().min(1, { message: "JWT_SECRET is required" }),
 });
 
 // Parse and export

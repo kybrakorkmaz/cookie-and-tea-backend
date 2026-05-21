@@ -1,41 +1,58 @@
-version: '3.8'
 services:
   api:
+    extends:
+      file: docker-compose.base.yml
+      service: api-base
     build:
-      context: .
-      dockerfile: Dockerfile
       target: development
     container_name: cat_test_api
     ports:
       - "8001:8000"
+    networks:
+      - cat-test-network
     volumes:
       - .:/app
       - /app/node_modules
     env_file:
       - .env.test
-    environment:
-      - IN_DOCKER=1
     depends_on:
       postgres:
         condition: service_healthy
     command: npm run dev
 
   postgres:
-    image: postgres:17-alpine
+    extends:
+      file: docker-compose.base.yml
+      service: postgres
     container_name: cat_test_postgres
+    networks:
+      - cat-test-network
     env_file:
       - .env.test
     ports:
-      - "127.0.0.1:5433:5432"
+      - "127.0.0.1:5435:5432"
     volumes:
       - postgres_test_data:/var/lib/postgresql/data
-      # do not mount init.sql for test compose to avoid init script failure if DB exists
-      # - ./src/scripts/sql/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d cat_test"]
       interval: 5s
       timeout: 5s
       retries: 5
+
+  pgAdmin:
+    image: dpage/pgadmin4
+    container_name: cat_test_pgadmin
+    networks:
+      - cat-test-network
+    ports:
+      - "127.0.0.1:5051:80"
+    env_file:
+      - .env.test
+    depends_on:
+      - postgres
+
+networks:
+  cat-test-network:
 
 volumes:
   postgres_test_data:

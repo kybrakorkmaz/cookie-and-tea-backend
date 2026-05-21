@@ -1,43 +1,116 @@
 # cookie-and-tea-backend
 
-## Development — Running database migrations
+Creator support app like Buy Me a Coffee or Ko-fi.
 
-The project uses Docker Compose for local development and a `postgres` service. To avoid connecting to a host Postgres instance (which often runs on `localhost`), run migrations inside the app container so the service connects via the Docker network.
+## Getting Started
 
-Recommended (works when containers are running):
+### Prerequisites
+- Docker and Docker Compose
+- Node.js (for local development)
+- Bash-compatible environment (Git Bash, WSL, or Linux/macOS)
 
-```powershell
-# Start the compose stack (if not already running)
+## Environment Management
+
+This project uses coordinated bash scripts and `package.json` scripts to manage different environments (Development, Test, Production).
+
+### Bash Scripts
+The core logic resides in `src/scripts/bash/`:
+- `dev.sh`: Manages the development stack.
+- `test.sh`: Manages the test environment and runs tests.
+- `prod.sh`: Manages the production stack.
+
+Usage: `bash src/scripts/bash/<script>.sh [command]`
+
+### Script Command Matrix
+
+| Command   | `dev.sh` | `test.sh` | `prod.sh` | Notes |
+|-----------|:--------:|:---------:|:---------:|-------|
+| `up`      | ✓        | ✓         | ✓         | Starts the environment. |
+| `down`    | ✓        | ✓         | ✓         | Stops and removes containers. |
+| `logs`    | ✓        | ✓         | ✓         | Follows container logs. |
+| `migrate` | ✓        | ✓         | -         | Runs migrations in the container. |
+| `run`     | -        | ✓         | -         | Full cycle: up → migrate → test → down. |
+| `restart` | ✓        | -         | -         | Restarts development containers. |
+| `ps`      | ✓        | -         | ✓         | Lists container status. |
+| `-v` flag | ✓        | ✓         | ✓         | Can be added to `down` to remove volumes. |
+
+---
+
+## Development
+
+The development environment uses `docker-compose.dev.yml` and includes the API, a Postgres database, and pgAdmin.
+
+```bash
+# Start the development environment
 npm run docker:up
 
-# Run migrations using the helper script (recommended)
-npm run docker:db:migrate
-# or using docker compose exec (requires running service name 'api')
-npm run docker:db:migrate:exec
+# Run database migrations
+npm run docker:migrate
+
+# View logs
+npm run docker:logs
+
+# Stop the environment
+npm run docker:down
+
+# Stop and remove volumes (reset database)
+npm run docker:down:v
 ```
 
-Notes:
-- `npm run db:migrate` runs the migration command on your host. If you have a local Postgres service on your host that listens on `localhost:5432`, this may accidentally connect to that Postgres instance instead of the Docker one and cause authentication errors.
-- We set `IN_DOCKER=1` for the `api` service in `docker-compose.dev.yml`; the migration script uses this to rewrite `@localhost:` URLs to the Docker service alias `@postgres:` when running inside the container.
+- **API:** http://localhost:8000
+- **pgAdmin:** http://localhost:5050 (Credentials in `.env`)
+- **Database (Internal):** Port 5432
+- **Database (External):** Port 5434 (mapped to avoid conflicts with local Postgres)
 
-If you prefer host-level migrations, ensure your host Postgres credentials match `DATABASE_URL` or stop the host Postgres service before running `npm run db:migrate`.
+---
 
-## Running tests inside Docker (recommended)
+## Testing
 
-To run test database and test suite inside Docker (keeps host environment isolated):
+Tests are executed in an isolated Docker environment to ensure consistency.
 
-```powershell
-# Bring up the dedicated test compose stack (uses .env.test and launches cat_test API container)
-npm run docker:test:up
+```bash
+# Run the full test suite (up -> migrate -> test -> down)
+npm run test:docker
 
-# Run the migrations against test database inside the test api container
-npm run docker:test:migrate
-
-# Run the test suite inside the container
-npm run docker:test:run
-
-# Tear down the test stack
-npm run docker:test:down
+# Manual control:
+npm run test:docker:up      # Start test containers
+npm run test:docker:migrate # Run migrations on test DB
+npm run test:docker:watch   # Run tests in watch mode (requires test:docker:up first)
+npm run test:docker:down    # Stop and clean up test containers
 ```
 
-This creates an isolated `cat_test` Postgres instance (host port 5433) and an `api` container that uses `.env.test` so tests run against the containerized test database.
+### Harmonious Workflow
+
+You can run both development and test environments at the same time:
+- **Dev Stack** (Port 8000, DB 5434)
+- **Test Stack** (Port 8001, DB 5435)
+
+This allows you to implement features in the dev environment and immediately run tests against the test environment without context switching or stopping containers.
+
+---
+
+## Production
+
+The production configuration uses `docker-compose.prod.yml` and builds the production target of the Dockerfile.
+
+```bash
+# Start production environment
+npm run prod:up
+
+# Stop production environment
+npm run prod:down
+
+# View production logs
+npm run prod:logs
+```
+
+## Local Development (Non-Docker)
+
+If you prefer to run the Node.js server directly on your host:
+
+```bash
+npm install
+npm run db:migrate
+npm run dev
+```
+*Note: Ensure a Postgres instance is running and `DATABASE_URL` is correctly configured in `.env`.*

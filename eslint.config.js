@@ -13,6 +13,7 @@ export default [
                 process: "readonly",
                 console: "readonly",
                 setTimeout: "readonly",
+                URL: "readonly",
             },
         },
 
@@ -22,7 +23,7 @@ export default [
 
         // 3. The Rules
         rules: {
-            "no-unused-vars": "warn",        // Highlights variables you forgot to use
+            "no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],        // Highlights variables you forgot to use
             "no-undef": "error",             // Errors if you use something not defined
             "no-console": "off",             // Allow console.logs for backend debugging
             "prefer-const": "error",         // Suggests 'const' if variable isn't reassigned
