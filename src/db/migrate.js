@@ -4,19 +4,11 @@ import { neon } from "@neondatabase/serverless";
 import { drizzle as drizzleLocal } from "drizzle-orm/postgres-js";
 import { migrate as migrateLocal } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
-import fs from "fs";
 import { ENV } from "../../env.js";
 
 // Helper to safely detect if running inside Docker
 function isRunningInDocker() {
-    if (process.env.IN_DOCKER === "1") return true;
-    if (process.platform !== "linux") return false;
-    if (fs.existsSync("/.dockerenv")) return true;
-    try {
-        return fs.readFileSync("/proc/1/cgroup", "utf8").includes("docker");
-    } catch {
-        return false;
-    }
+    return process.env.IN_DOCKER === "1";
 }
 
 async function runMigration() {
@@ -45,10 +37,12 @@ async function runMigration() {
         console.log("Applying structural scripts via Local Postgres-js TCP Driver...");
 
         // Inside Docker container network layouts, replace 'localhost' with the service alias 'postgres'
+        // and also reset the port to default 5432 since containers communicate on internal ports.
         let connectionString = dbUrl;
 
         if (isRunningInDocker() && connectionString.includes("@localhost:")) {
-            connectionString = connectionString.replace("@localhost:", "@postgres:");
+            // Replaces @localhost:PORT with @postgres:5432
+            connectionString = connectionString.replace(/@localhost:\d+/, "@postgres:5432");
         }
 
         const sqlClient = postgres(connectionString);

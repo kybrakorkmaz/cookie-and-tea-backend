@@ -1,58 +1,53 @@
 services:
   api:
+    extends:
+      file: docker-compose.base.yml
+      service: api-base
     build:
-      context: .
-      dockerfile: Dockerfile
       target: development
-
-    container_name: cat_dev
-
+    container_name: cat_dev_api
     ports:
-      - "8000:8000"
-
+      - "${API_PORT:-8000}:8000"
     volumes:
       - .:/app
       - /app/node_modules
-      - ./.env.test:/app/.env.test
     env_file:
       - .env
-    environment:
-      - IN_DOCKER=1
-
+    networks:
+      - cat-dev-network
     depends_on:
       postgres:
         condition: service_healthy
-
-    restart: unless-stopped
-
     command: npm run dev
 
   postgres:
-    image: postgres:17-alpine
-    container_name: cat_postgres
+    extends:
+      file: docker-compose.base.yml
+      service: postgres
+    container_name: cat_dev_postgres
+    networks:
+      - cat-dev-network
     env_file:
       - .env
     ports:
-      - "127.0.0.1:5432:5432"
-
+      - "127.0.0.1:5434:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./src/scripts/sql/init.sql:/docker-entrypoint-initdb.d/init.sql
-
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      - postgres_dev_data:/var/lib/postgresql/data
 
   pgAdmin:
     image: dpage/pgadmin4
-    container_name: cat_pgadmin
+    container_name: cat_dev_pgadmin
+    networks:
+      - cat-dev-network
     ports:
       - "127.0.0.1:5050:80"
     env_file:
       - .env
     depends_on:
       - postgres
+
+networks:
+  cat-dev-network:
+
 volumes:
-  postgres_data:
+  postgres_dev_data:

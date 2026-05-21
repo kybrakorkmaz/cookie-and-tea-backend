@@ -17,7 +17,13 @@ if(ENV.NODE_ENV === "production"){
     db = drizzleNeon(client, { schema });
 }else{
     // DEVELOPMENT/TEST: Local Postgres (TCP/Binary)
-    const localDbUrl = ENV.DATABASE_URL || "postgres://postgres:strongdevpass123@localhost:5432/cat_dev";
+    let localDbUrl = ENV.DATABASE_URL;
+
+    // Inside Docker, containers communicate via service names and internal ports
+    if (process.env.IN_DOCKER === "1") {
+        localDbUrl = localDbUrl.replace(/@localhost:\d+/, "@postgres:5432");
+    }
+
     // Connects to your local Docker container.
     const client = postgres(localDbUrl, {
         // Optional: set max connections for local dev

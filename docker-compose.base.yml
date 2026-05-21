@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api-base:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - IN_DOCKER=1
+    restart: unless-stopped
