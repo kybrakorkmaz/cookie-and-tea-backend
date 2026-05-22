@@ -1,5 +1,7 @@
 import winston from "winston";
 import {ENV} from "../../env.js";
+import fs from "node:fs";
+import path from "node:path";
 
 let info, format, isProduction;
 // winston log levels: silly -> debug -> verbose -> info -> warn -> error
@@ -12,7 +14,7 @@ const isTest = ENV.NODE_ENV === "test";
 
 // 2. Define a clean pretty print format for Development terminal viewing
 const devLogFormat = printf(({level, message, timestamp, ...metadata}) => {
-    let extraMeta = Object.keys(metadata).length ? JSON.stringify(metadata) : "";
+    const extraMeta = Object.keys(metadata).length ? JSON.stringify(metadata) : "";
     return `${timestamp} [${level}]: ${message} ${extraMeta}`;
 });
 
@@ -42,10 +44,14 @@ export const logger = winston.createLogger({
 // --- Production-only log to file
 // Instead of evaluating inside the array, we cleanly push file tracking configuration on production builds
 if (isProd) {
+    // if the log directory does not exist, first create it
+    const logDir = path.resolve("src/logs");
+    fs.mkdirSync(logDir, {recursive: true});
+
     // Capture general system information logs
     logger.add(
         new winston.transports.File({
-            filename: "src/logs/combined.log",
+            filename: path.join(logDir, "combined.log"),
             level: "info",
             format: combine(timestamp(), json()),
         })
@@ -54,7 +60,7 @@ if (isProd) {
     // Separate critical application crashes or server catches
     logger.add(
         new winston.transports.File({
-            filename: "src/logs/error.log",
+            filename: path.join(logDir, "error.log"),
             level: "error",
             format: combine(timestamp(), json()),
         })

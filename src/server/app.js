@@ -12,17 +12,7 @@ app.use(express.json());
 
 // Routes
 app.use("/api", profileRouter);
-app.use("api/v1/users", userRouter);
-
-// 404 Fallback routing handler
-app.use((req, res, next)=>{
-    const notFoundError = new Error(`Can't find path ${req.originalUrl} on this server`);
-    notFoundError.statusCode = 404;
-    next(notFoundError)
-});
-
-// The Error Middleware must ALWAYS sit dead last at the bottom
-app.use(errorHandler);
+app.use("/api/v1/users", userRouter);
 
 
 app.get("/", (req, res) => {
@@ -50,13 +40,15 @@ app.get("/health", async (req, res) => {
     });
 });
 
-app.use((err, req, res, _next) => {
-    console.error(err.stack);
-    res.status(500).json({
-        status: "error",
-        message: ENV.NODE_ENV === "production" ? "Internal server error" : err.message,
-    });
+// 404 Fallback routing handler - Catches missed routes and passes an error forward
+app.use((req, res, next)=>{
+    const notFoundError = new Error(`Can't find path ${req.originalUrl} on this server`);
+    notFoundError.statusCode = 404;
+    next(notFoundError)
 });
+
+// The Error Middleware must ALWAYS sit dead last at the bottom
+app.use(errorHandler);
 
 export default app;
 

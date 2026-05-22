@@ -4,7 +4,10 @@ import {ENV} from "../../env.js";
 
 export const errorHandler = (err, req, res, next) =>{
     // 1. Identify status code and message defaults
-    const statusCode = err.statusCode || 500;
+    const statusCode = Number.isInteger(err?.statusCode) && statusCode >= 400 && statusCode <= 599
+    ? err.statusCode
+    : 500;
+
     const message = err.message || "Internal Server Error";
 
     // 2. Pass error metadata straight into the Winston logger.

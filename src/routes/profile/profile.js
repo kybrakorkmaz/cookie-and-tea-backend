@@ -5,9 +5,10 @@ import {eq} from "drizzle-orm";
 
 const router = express.Router();
 // get user profile info (name, username, user image, bg image etc.
-router.get("/profile", async (req,res)=>{
+router.get("/profile", async (req,res, next)=>{
     try{
-        const {username} = req.query; // authenticated user's username
+        // Validate username as a non-empty string before DB query.
+        const {username} = typeof req.query.username === "string" ? req.query.username.trim() : ""; // authenticated user's username
 
         if (!username) {
             return res.status(400).json({ error: "Username is required" });
@@ -32,8 +33,7 @@ router.get("/profile", async (req,res)=>{
             followingCount: userData.followingCount
         });
     }catch (e) {
-        console.error(e);
-        return res.status(500).json({ error: "Internal server error" });
+       next(e);
     }
 })
 

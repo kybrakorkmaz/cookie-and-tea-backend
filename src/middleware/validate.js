@@ -1,4 +1,6 @@
 // Higher-order function validation middleware
+import {ZodError} from "zod";
+
 export const validate = (schema) =>{
     return async (req, res, next)=>{
         try {
@@ -11,8 +13,8 @@ export const validate = (schema) =>{
             next(); // Validation passed, proceed to controller.
         }catch (error) {
             // If Zod fails, format errors nicely and pass to error middleware
-            if(error.name === "ZodError"){
-                const errorMessage = error.errors.map((err)=>`${err.path.join(".")}: ${err.message}`);
+            if(error instanceof ZodError){
+                const errorMessage = error.issues.map((err)=>`${err.path.join(".")}: ${err.message}`);
 
                 // Create an inline error object with an HTTP status code
                 const validationError = new Error(`Validation failed: ${errorMessage.join(", ")}`);
@@ -20,7 +22,7 @@ export const validate = (schema) =>{
 
                 return next(validationError); // Forward to centralized errorHandler
             }
-            // Catch-all to make sure unexpected errors (if not zod error) get forwarded to the error handler 
+            // Catch-all to make sure unexpected errors (if not zod error) get forwarded to the error handler
             next(error);
         }
     };
