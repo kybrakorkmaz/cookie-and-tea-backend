@@ -18,7 +18,7 @@ case $COMMAND in
     echo "Starting development environment..."
     docker compose -p $PROJECT_NAME -f $COMPOSE_FILE up -d --build
     echo "Development environment is up."
-    echo "API: http://localhost:${API_PORT:-8000}"
+    echo "API: http://localhost:${API_PORT:-8003}"
     echo "pgAdmin: http://localhost:${PGADMIN_PORT:-5050}"
     ;;
   down)

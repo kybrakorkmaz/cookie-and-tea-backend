@@ -8,7 +8,7 @@ const router = express.Router();
 router.get("/profile", async (req,res, next)=>{
     try{
         // Validate username as a non-empty string before DB query.
-        const {username} = typeof req.query.username === "string" ? req.query.username.trim() : ""; // authenticated user's username
+        const username = typeof req.query.username === "string" ? req.query.username.trim() : ""; // authenticated user's username
 
         if (!username) {
             return res.status(400).json({ error: "Username is required" });
