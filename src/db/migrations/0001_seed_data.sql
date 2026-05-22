@@ -39,7 +39,7 @@ INSERT INTO "donations" ("post_id", "donator_id", "receiver_id", "amount") VALUE
 (3, 1, 3, 200);
 
 -- Update user counts (manual sync as per schema comments)
-UPDATE "users" SET "follower_count" = 4, "following_count" = 2 WHERE "id" = 1;
+UPDATE "users" SET "follower_count" = 3, "following_count" = 2 WHERE "id" = 1;
 UPDATE "users" SET "follower_count" = 1, "following_count" = 1 WHERE "id" = 2;
 UPDATE "users" SET "follower_count" = 0, "following_count" = 1 WHERE "id" = 3;
 UPDATE "users" SET "follower_count" = 1, "following_count" = 1 WHERE "id" = 4;

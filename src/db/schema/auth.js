@@ -8,9 +8,6 @@ import {
     uniqueIndex,
     varchar
 } from "drizzle-orm/pg-core";
-import {relations} from "drizzle-orm";
-import {comments, donations, posts} from "./posts.js";
-import {follows, socials} from "./profile.js";
 import {timestamps} from "./common.js";
 
 // Defined roles for access control in Express middleware
@@ -74,18 +71,4 @@ export const verification = pgTable("verification", {
 }, (table) => ({
     identifierIdx: index("verification_identifier_idx").on(table.identifier),
     verificationUserIdx: index("verification_user_id_idx").on(table.userId),
-}));
-
-export const userRelations = relations(users, ({many})=>({
-    posts: many(posts),
-    donationSent: many(donations, {relationName: "donator"}),
-    donationsReceived: many(donations, {relationName: "receiver"}),
-    comments: many(comments),
-    socials: many(socials),
-    followers: many(follows, {relationName: "following"}), // people following the authenticated user
-    following: many(follows, {relationName: "follower"}) // people this user follows
-}));
-
-export const sessionRelations = relations(sessions, ({one})=>({
-    user: one(users, {fields: [sessions.userId], references:[users.id]})
 }));

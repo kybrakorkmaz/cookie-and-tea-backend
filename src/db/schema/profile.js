@@ -1,5 +1,5 @@
 import { index, integer, pgEnum, pgTable, text, unique, check, uniqueIndex } from "drizzle-orm/pg-core";
-import {relations, sql} from "drizzle-orm";
+import {sql} from "drizzle-orm";
 import { users } from "./auth.js";
 import { timestamps } from "./common.js";
 
@@ -64,34 +64,4 @@ export const messages = pgTable("messages", {
     ...timestamps
 }, (table) => ({
     chatIdx: index("chat_msg_idx").on(table.conversationId),
-}));
-
-export const socialRelations = relations(socials, ({one})=>({
-    user: one(users, {fields: [socials.userId], references:[users.id]})
-}));
-
-export const followsRelations = relations(follows, ({one})=>({
-    follower: one(users, {fields: [follows.followerId], references: [users.id], relationName: "follower"}),
-    following: one(users, {fields: [follows.followingId], references: [users.id], relationName: "following"}),
-}));
-
-export const conversationsRelations = relations(conversations, ({many, one})=>({
-    messages: many(messages),
-
-    // Explicitly mapping the fluid roles to the users table:
-    userOne: one(users, {
-        fields: [conversations.userOneId],
-        references: [users.id],
-        relationName: "chatParticipantOne" // Named relation to avoid ambiguity
-    }),
-    userTwo: one(users, {
-        fields: [conversations.userTwoId],
-        references: [users.id],
-        relationName: "chatParticipantTwo"
-    }),
-}));
-
-export const messageRelations = relations(messages, ({one})=>({
-    conversation: one(conversations, {fields: [messages.conversationId], references: [conversations.id]}),
-    sender: one(users, {fields: [messages.senderId], references: [users.id]})
 }));
