@@ -1,6 +1,7 @@
 import { integer, pgEnum, pgTable, text, timestamp, check} from "drizzle-orm/pg-core";
-import { sql } from "drizzle-orm";
-import { users, timestamps } from "./auth.js";
+import {relations, sql} from "drizzle-orm";
+import { users } from "./auth.js";
+import { timestamps } from "./common.js";
 
 /*
 * For each post:
@@ -68,3 +69,20 @@ export const comments = pgTable("comments", {
     comment: text("comment").notNull(),
     ...timestamps
 });
+
+export const postsRelations = relations(posts, ({one, many})=>({
+    author: one(users, {fields: [posts.userId], references: [users.id]}),
+    donations: many(donations),
+    comments: many(comments)
+}));
+
+export const donationRelations = relations(donations, ({one})=>({
+    post: one(posts, {fields: [donations.postId], references: [posts.id]}),
+    donator: one(users, {fields:[donations.donatorId], references:[users.id], relationName: "donator"}),
+    receiver: one(users, {fields: [donations.receiverId], references:[users.id], relationName: "receiver"})
+}));
+
+export const commentsRelations = relations(comments, ({one})=>({
+    post: one(posts, {fields: [comments.postId], references:[posts.id]}),
+    commenter: one(users, {fields: [comments.commenterId], references: [users.id]})
+}));
