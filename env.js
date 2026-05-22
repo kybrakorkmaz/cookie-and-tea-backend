@@ -11,7 +11,7 @@ const envSchema = z.object({
         .coerce.number().int()
         .min(1, { message: "Port must be >= 1" })
         .max(65535, { message: "Port must be <= 65535" })
-        .default(8000),
+        .default(8003),
     BASE_URL: z.url({ message: "Invalid URL format" }),
     DATABASE_URL: z.string().refine((url) => {
         try {
