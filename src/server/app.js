@@ -1,11 +1,29 @@
 import express from "express";
 import {ENV} from "../../env.js";
 import {checkDatabaseConnection} from "../db/checkConnection.js";
+import profileRouter from "../routes/profile/profile.js";
+import userRouter from "../routes/user/user.routes.js";
+import {errorHandler} from "../handlers/errorHandler.js";
 
 const app = express();
 
 // Middleware
 app.use(express.json());
+
+// Routes
+app.use("/api", profileRouter);
+app.use("api/v1/users", userRouter);
+
+// 404 Fallback routing handler
+app.use((req, res, next)=>{
+    const notFoundError = new Error(`Can't find path ${req.originalUrl} on this server`);
+    notFoundError.statusCode = 404;
+    next(notFoundError)
+});
+
+// The Error Middleware must ALWAYS sit dead last at the bottom
+app.use(errorHandler);
+
 
 app.get("/", (req, res) => {
     res.json({
