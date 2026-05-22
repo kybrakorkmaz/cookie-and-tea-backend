@@ -1,6 +1,7 @@
 import { index, integer, pgEnum, pgTable, text, unique, check, uniqueIndex } from "drizzle-orm/pg-core";
-import { sql } from "drizzle-orm";
-import { users, timestamps } from "./auth.js";
+import {sql} from "drizzle-orm";
+import { users } from "./auth.js";
+import { timestamps } from "./common.js";
 
 // External social media platforms supported by your API
 export const socialEnum = pgEnum("social_provider", ["twitter", "instagram", "youtube", "pinterest"]);

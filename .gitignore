@@ -145,3 +145,6 @@ vite.config.ts.timestamp-*
 # IDE-specific files
 .idea
 .DS_Store
+
+# Session Documentation
+CONVERSATION_LOG.md

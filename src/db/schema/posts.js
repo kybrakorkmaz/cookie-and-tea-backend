@@ -1,6 +1,7 @@
 import { integer, pgEnum, pgTable, text, timestamp, check} from "drizzle-orm/pg-core";
-import { sql } from "drizzle-orm";
-import { users, timestamps } from "./auth.js";
+import {sql} from "drizzle-orm";
+import { users } from "./auth.js";
+import { timestamps } from "./common.js";
 
 /*
 * For each post:

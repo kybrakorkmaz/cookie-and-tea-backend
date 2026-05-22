@@ -8,18 +8,10 @@ import {
     uniqueIndex,
     varchar
 } from "drizzle-orm/pg-core";
+import {timestamps} from "./common.js";
 
 // Defined roles for access control in Express middleware
 export const roleEnum = pgEnum("role", ["user", "admin"]);
-
-// Reusable timestamps to track record lifecycle
-export const timestamps = {
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at")
-        .defaultNow()
-        .$onUpdate(() => new Date())
-        .notNull(),
-};
 
 // Primary user table - renamed to 'users' to avoid Postgres reserved word conflicts
 export const users = pgTable("users", {
