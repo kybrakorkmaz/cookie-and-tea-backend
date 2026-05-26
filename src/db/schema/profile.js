@@ -1,7 +1,7 @@
 import { index, integer, pgEnum, pgTable, text, unique, check, uniqueIndex } from "drizzle-orm/pg-core";
 import {sql} from "drizzle-orm";
 import { users } from "./auth.js";
-import { timestamps } from "./common.js";
+import {actionTimestamp, timestamps} from "./common.js";
 
 // External social media platforms supported by your API
 export const socialEnum = pgEnum("social_provider", ["twitter", "instagram", "youtube", "pinterest"]);
@@ -13,7 +13,8 @@ export const socials = pgTable("socials", {
         .notNull()
         .references(() => users.id, { onDelete: "cascade" }),
     socialMedia: socialEnum("social_media").notNull(),
-    socialUrl: text("social_url").notNull().unique()
+    socialUrl: text("social_url").notNull().unique(),
+    ...timestamps() // handles quick platform link changes
 });
 
 // Relationship table for Follower/Following logic
@@ -21,7 +22,7 @@ export const follows = pgTable("follows", {
     id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
     followerId: integer("follower_id").notNull().references(() => users.id, { onDelete: "cascade" }),
     followingId: integer("following_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-    ...timestamps
+    ...actionTimestamp()
 }, (table) => ({
     followerIdx: index("follower_idx").on(table.followerId),
     followingIdx: index("following_idx").on(table.followingId),
@@ -41,7 +42,7 @@ export const conversations = pgTable("conversations", {
     // Manual integer instead of references() to avoid circular dependency in Drizzle initialization
     lastMessageId: integer("last_message_id"),
 
-    ...timestamps
+    ...actionTimestamp()
 }, (table) => ({
     // Ensures only one unique conversation exists between any two users (regardless of order)
     // Uses LEAST/GREATEST to normalize the pair so (1,2) and (2,1) map to the same constraint
@@ -61,7 +62,7 @@ export const messages = pgTable("messages", {
         .references(() => conversations.id, { onDelete: "cascade" }),
     senderId: integer("sender_id").notNull().references(() => users.id, { onDelete: "cascade" }),
     content: text("content").notNull(),
-    ...timestamps
+    ...timestamps()
 }, (table) => ({
     chatIdx: index("chat_msg_idx").on(table.conversationId),
 }));

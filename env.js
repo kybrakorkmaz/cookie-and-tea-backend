@@ -1,7 +1,10 @@
 import {z} from "zod";
 import dotenv from "dotenv";
 
-dotenv.config();
+// Only trigger dotenv if we aren't running in Docker or using native env-file flags
+if (!process.env.IN_DOCKER && !process.env.DATABASE_URL) {
+    dotenv.config();
+}
 
 const envSchema = z.object({
     NODE_ENV: z

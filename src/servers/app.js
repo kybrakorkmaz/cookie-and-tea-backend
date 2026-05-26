@@ -1,7 +1,7 @@
 import express from "express";
 import {ENV} from "../../env.js";
 import {checkDatabaseConnection} from "../db/checkConnection.js";
-import profileRouter from "../routes/profile/profile.js";
+import profileRouter from "../routes/profile/profile.routes.js";
 import userRouter from "../routes/user/user.routes.js";
 import {errorHandler} from "../handlers/errorHandler.js";
 
@@ -11,9 +11,8 @@ const app = express();
 app.use(express.json());
 
 // Routes
-app.use("/api", profileRouter);
+app.use("/api/v1/profile", profileRouter);
 app.use("/api/v1/users", userRouter);
-
 
 app.get("/", (req, res) => {
     res.json({
