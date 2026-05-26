@@ -1,6 +1,6 @@
 import { describe, it, expect } from '@jest/globals';
 import request from 'supertest';
-import app from '../server/app.js';
+import app from '../servers/app.js';
 import {ENV} from '../../env.js';
 
 describe('GET /', () => {

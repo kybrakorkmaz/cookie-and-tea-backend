@@ -1,7 +1,10 @@
 import {z} from "zod";
 import dotenv from "dotenv";
 
-dotenv.config();
+// Only run dotenv if a standard variable is missing, preventing double-loading logs
+if (!process.env.NODE_ENV) {
+    dotenv.config();
+}
 
 const envSchema = z.object({
     NODE_ENV: z

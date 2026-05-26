@@ -57,7 +57,7 @@ if (isProd) {
         })
     );
 
-    // Separate critical application crashes or server catches
+    // Separate critical application crashes or servers catches
     logger.add(
         new winston.transports.File({
             filename: path.join(logDir, "error.log"),

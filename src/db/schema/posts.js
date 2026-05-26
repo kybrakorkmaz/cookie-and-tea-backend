@@ -1,7 +1,7 @@
 import { integer, pgEnum, pgTable, text, timestamp, check} from "drizzle-orm/pg-core";
 import {sql} from "drizzle-orm";
 import { users } from "./auth.js";
-import { timestamps } from "./common.js";
+import {actionTimestamp, timestamps} from "./common.js";
 
 /*
 * For each post:
@@ -29,7 +29,7 @@ export const posts = pgTable("posts", {
     commentCount: integer("comment_count").default(0).notNull(),
     donationSum: integer("donation_sum").default(0).notNull(),
 
-    ...timestamps
+    ...timestamps()
 });
 
 // DONATIONS: Financial records are kept even if the post is gone
@@ -50,7 +50,7 @@ export const donations = pgTable("donations", {
         .references(() => users.id),
 
     amount: integer("amount").notNull(), // Stored in cents/smallest unit
-    createdAt: timestamp("created_at").defaultNow().notNull(),
+    ...actionTimestamp(),
 }, () => ({
     amountCheckConstraint: check("amount_non_negative", sql`amount >= 0`),
 }));
@@ -67,5 +67,5 @@ export const comments = pgTable("comments", {
         .references(() => users.id),
 
     comment: text("comment").notNull(),
-    ...timestamps
+    ...timestamps()
 });

@@ -15,6 +15,13 @@
       "when": 1779284374562,
       "tag": "0001_seed_data",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1779793018461,
+      "tag": "0002_lazy_turbo",
+      "breakpoints": true
     }
   ]
 }

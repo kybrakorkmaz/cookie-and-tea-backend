@@ -8,7 +8,7 @@ import {
     uniqueIndex,
     varchar
 } from "drizzle-orm/pg-core";
-import {timestamps} from "./common.js";
+import {actionTimestamp, timestamps} from "./common.js";
 
 // Defined roles for access control in Express middleware
 export const roleEnum = pgEnum("role", ["user", "admin"]);
@@ -25,12 +25,12 @@ export const users = pgTable("users", {
     backgroundImage: text("background_image"),
     about: text("about"),
 
-    // Performance Optimization: Cache counts here so you don't
+    // Performance Optimization: Cache counts here so we don't
     // have to run a COUNT(*) query on every profile load.
     followerCount: integer("follower_count").default(0).notNull(),
     followingCount: integer("following_count").default(0).notNull(),
 
-    ...timestamps,
+    ...timestamps(),
 });
 
 // Auth sessions table for managing user logins
@@ -41,7 +41,7 @@ export const sessions = pgTable("session", {
     expiresAt: timestamp("expires_at").notNull(),
     ipAddress: text("ip_address"),
     userAgent: text("user_agent"),
-    ...timestamps,
+    ...actionTimestamp(),
 }, (table) => ({
     userIdIdx: index("session_user_id_idx").on(table.userId),
 }));
@@ -54,7 +54,7 @@ export const accounts = pgTable("accounts", {
     providerId: varchar("provider_id", { length: 255 }).notNull(),
     accessToken: text("access_token"),
     refreshToken: text("refresh_token"),
-    ...timestamps,
+    ...actionTimestamp(),
 }, (table) => ({
     accountUnique: uniqueIndex("account_provider_account_unique").on(table.providerId, table.accountId)
 }));
@@ -67,7 +67,7 @@ export const verification = pgTable("verification", {
     identifier: text("identifier").notNull(), // Email address
     value: text("value").notNull(), // Hashed token
     expiresAt: timestamp("expires_at").notNull(),
-    ...timestamps,
+    ...actionTimestamp(),
 }, (table) => ({
     identifierIdx: index("verification_identifier_idx").on(table.identifier),
     verificationUserIdx: index("verification_user_id_idx").on(table.userId),
