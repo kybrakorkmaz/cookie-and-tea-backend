@@ -41,7 +41,7 @@ export const topSupportedTwoPosts = async (userId) =>{
         //date:posts.date
     }).from(posts)
         .where(eq(posts.userId, userId))
-        .orderBy(desc(posts.createdAt), desc(posts.donationSum))
+        .orderBy(desc(posts.donationSum), desc(posts.createdAt))
         .limit(2)
 }
 
