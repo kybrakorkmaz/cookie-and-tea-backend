@@ -2,22 +2,16 @@ import {db} from "../db/client.js";
 import {users, socials, posts, follows} from "../db/schema/index.js";
 import {and, desc, eq, gte, sql} from "drizzle-orm";
 
-export const getUserAboutById = async (userId) =>{
-    const about = await db.select({
-        about:users.about
-    }).from(users).where(eq(users.id, userId));
-
-    return about[0] || null;
-}
-
 export const findSocialsByUserId = async (userId) => {
-    return db.select({
+    const results = await db.select({
         id: socials.id,
         platform: socials.socialMedia,
         url: socials.socialUrl
     })
         .from(socials)
-        .where(eq(socials.userId, userId)) || null;
+        .where(eq(socials.userId, userId));
+
+    return results.length > 0 ? results : null;
 };
 
 export const getUserEarningsById = async (userId, dayLimit) =>{
@@ -47,7 +41,7 @@ export const topSupportedTwoPosts = async (userId) =>{
         //date:posts.date
     }).from(posts)
         .where(eq(posts.userId, userId))
-        .orderBy(desc(posts.createdAt) && desc(posts.donationSum))
+        .orderBy(desc(posts.createdAt), desc(posts.donationSum))
         .limit(2)
 }
 
@@ -73,7 +67,7 @@ export const latestTwoFollowing = async (userId) =>{
         profileImage: users.profileImage
     }).from(follows)
         .innerJoin(users, eq(users.id, follows.followingId))
-        .where(eq(users.id, follows.followerId))
+        .where(eq(follows.followerId, userId))
         .orderBy(desc(follows.createdAt))
         .limit(2)
 }

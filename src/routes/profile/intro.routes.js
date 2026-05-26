@@ -33,7 +33,7 @@ router.get("/", async (req, res, next) => {
 
     } catch (e) {
         // 6. Any error thrown inside the controller or bubbled up from the
-        // service/repository layer lands here and drops cleanly into your errorHandler.
+        // service/repositories layer lands here and drops cleanly into your errorHandler.
         next(e);
     }
 });

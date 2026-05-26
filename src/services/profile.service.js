@@ -1,10 +1,10 @@
-import {findUserByUsername} from "../repository/auth.repository.js";
+import {findUserByUsername} from "../repositories/auth.repository.js";
 import {
     findSocialsByUserId,
     getUserEarningsById,
     latestTwoFollowers, latestTwoFollowing,
     topSupportedTwoPosts
-} from "../repository/profile.repository.js";
+} from "../repositories/profile.repository.js";
 
 export const getPanelInfo = async (username) =>{
     const user = await findUserByUsername(username);

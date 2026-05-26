@@ -1,8 +1,8 @@
 import {z} from "zod";
 import dotenv from "dotenv";
 
-// Only run dotenv if a standard variable is missing, preventing double-loading logs
-if (!process.env.NODE_ENV) {
+// Only trigger dotenv if we aren't running in Docker or using native env-file flags
+if (!process.env.IN_DOCKER && !process.env.DATABASE_URL) {
     dotenv.config();
 }
 
