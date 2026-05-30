@@ -64,9 +64,17 @@ describe("Profile Integration Suite with Live Test DB", ()=>{
     // Teardown phase: Cascading deletes via references clear everything cleanly
     afterAll(async () =>{
         try {
-            if (testUserId || followerUserId) {
-                // Cascades down to clear related test records cleanly
-                await db.delete(users).where(or(eq(users.id, testUserId), eq(users.id, followerUserId)));
+            // Safely compile conditions strictly using explicitly defined IDs
+            const conditions = [];
+            if (testUserId != null) {
+                conditions.push(eq(users.id, testUserId));
+            }
+            if (followerUserId != null) {
+                conditions.push(eq(users.id, followerUserId));
+            }
+            if (conditions.length > 0) {
+                const predicate = conditions.length === 2 ? or(...conditions) : conditions[0];
+                await db.delete(users).where(predicate);
             }
         } finally {
             // Safely terminate the open TCP sockets pool
