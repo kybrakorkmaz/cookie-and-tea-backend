@@ -64,12 +64,12 @@ describe("Profile Integration Suite with Live Test DB", ()=>{
     // Teardown phase: Cascading deletes via references clear everything cleanly
     afterAll(async () =>{
         try {
-            // Safely compile conditions strictly using explicitly defined IDs
+            // Using strict checks to satisfy ESLint eqeqeq while guarding against undefined/null
             const conditions = [];
-            if (testUserId != null) {
+            if (testUserId !== undefined && testUserId !== null) {
                 conditions.push(eq(users.id, testUserId));
             }
-            if (followerUserId != null) {
+            if (followerUserId !== undefined && followerUserId !== null) {
                 conditions.push(eq(users.id, followerUserId));
             }
             if (conditions.length > 0) {
