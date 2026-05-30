@@ -17,7 +17,7 @@
     "db:generate:test": "cross-env NODE_ENV=test node --env-file=.env.test node_modules/drizzle-kit/bin.cjs generate",
     "db:migrate:test": "cross-env NODE_ENV=test node --env-file=.env.test src/db/migrate.js",
 
-    "test": "cross-env NODE_ENV=test node --experimental-vm-modules --env-file=.env.test node_modules/.bin/jest --runInBand",
+    "test": "cross-env NODE_ENV=test node --experimental-vm-modules --env-file=.env.test node_modules/jest/bin/jest.js --runInBand --forceExit",
 
     "docker:up": "bash src/scripts/bash/dev.sh up",
     "docker:down": "bash src/scripts/bash/dev.sh down",
