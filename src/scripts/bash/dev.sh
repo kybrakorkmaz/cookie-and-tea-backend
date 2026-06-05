@@ -33,9 +33,13 @@ case $COMMAND in
     docker compose -p $PROJECT_NAME -f $COMPOSE_FILE exec api npm run db:migrate
     ;;
   restart)
-    echo "Restarting development environment..."
-    docker compose -p $PROJECT_NAME -f $COMPOSE_FILE restart "${@:2}"
-    ;;
+      echo "Hard-cycling development environment..."
+      # Drop the container and its anonymous tracking volumes
+      docker compose -p $PROJECT_NAME -f $COMPOSE_FILE down
+      # Force a fresh runtime recreation tracking live hard-drive modifications
+      docker compose -p $PROJECT_NAME -f $COMPOSE_FILE up -d --force-recreate "${@:2}"
+      echo "Environment hard-recreated successfully."
+      ;;
   ps)
     docker compose -p $PROJECT_NAME -f $COMPOSE_FILE ps
     ;;

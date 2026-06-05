@@ -1,17 +1,15 @@
 import {db} from "../db/client.js";
 import {users, socials, posts, follows} from "../db/schema/index.js";
-import {and, desc, eq, gte, sql} from "drizzle-orm";
+import {and, desc, eq, gte, sql, or, inArray} from "drizzle-orm";
 
 export const findSocialsByUserId = async (userId) => {
-    const results = await db.select({
+    return db.select({
         id: socials.id,
-        platform: socials.socialMedia,
-        url: socials.socialUrl
+        socialMedia: socials.socialMedia,
+        socialUrl: socials.socialUrl
     })
         .from(socials)
         .where(eq(socials.userId, userId));
-
-    return results.length > 0 ? results : null;
 };
 
 export const getUserEarningsById = async (userId, dayLimit) =>{
@@ -38,7 +36,7 @@ export const topSupportedTwoPosts = async (userId) =>{
         header: posts.header,
         type: posts.type,
         content: posts.content,
-        //date:posts.date
+        date:posts.createdAt
     }).from(posts)
         .where(eq(posts.userId, userId))
         .orderBy(desc(posts.donationSum), desc(posts.createdAt))
@@ -70,4 +68,45 @@ export const latestTwoFollowing = async (userId) =>{
         .where(eq(follows.followerId, userId))
         .orderBy(desc(follows.createdAt))
         .limit(2)
+}
+export const updateSocialMediaById = async (userId, socialsList) => {
+    // Full transaction loop wiping old records and bulk-inserting new array lists
+    return db.transaction(async (tx) => {
+        // 1. Delete all existing social links for this specific profile ID
+        await tx.delete(socials).where(eq(socials.userId, userId));
+
+        // 2. Short-circuit if user cleared out all links
+        if (!socialsList || socialsList.length === 0) {
+            return [];
+        }
+
+        // 3. Map parameters to match database schema columns accurately
+        const recordsToInsert = socialsList.map(item => ({
+            userId: userId,
+            socialMedia: item.socialMedia,
+            socialUrl: item.socialUrl
+        }));
+
+        // 4. Bulk insert records and return rows mapped to keys matching your GET query expectations
+        return tx.insert(socials)
+            .values(recordsToInsert)
+            .returning({
+                id: socials.id,
+                socialMedia: socials.socialMedia,
+                socialUrl: socials.socialUrl
+            });
+    });
+};
+export const getImagesByUserId = async (userId) =>{
+    return db.select({
+        id: posts.id,
+        imageUrl: posts.images
+    })
+        .from(posts)
+        .where(
+            and(
+                eq(posts.userId, userId),
+                inArray(posts.type, ["image", "hybrid"])
+            )
+        );
 }

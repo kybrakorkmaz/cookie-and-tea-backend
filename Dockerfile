@@ -13,7 +13,6 @@ FROM base AS development
 ENV NODE_ENV=development
 COPY package*.json ./
 RUN npm install
-COPY . .
 EXPOSE 8000
 CMD ["npm", "run", "dev"]
 
@@ -33,6 +32,6 @@ USER nodejs
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-CMD node src/server/health.js
+CMD node src/server/healthgallery.route.js
 
 CMD ["npm", "start"]

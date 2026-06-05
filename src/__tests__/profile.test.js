@@ -124,7 +124,7 @@ describe("Profile Integration Suite with Live Test DB", ()=>{
             expect(res.body.earningsTotal).toBe(50);
 
             expect(Array.isArray(res.body.socials)).toBe(true);
-            expect(res.body.socials[0].platform).toBe("youtube");
+            expect(res.body.socials[0].socialMedia).toBe("youtube");
 
             expect(Array.isArray(res.body.topSupportedPosts)).toBe(true);
             expect(res.body.topSupportedPosts[0].header).toBe("First Tea Post");

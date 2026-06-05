@@ -17,3 +17,12 @@ export const findUserByUsername = async (username) => {
 
     return rows[0] || null;
 };
+
+export const changeAboutByUsername = async (username, about) =>{
+    const updatedRows = await db.update(users)
+        .set({ about: about })
+        .where(eq(users.username, username))
+        .returning({ about: users.about });
+
+    return updatedRows[0] || null;
+}

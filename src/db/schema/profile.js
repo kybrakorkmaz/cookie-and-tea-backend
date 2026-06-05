@@ -8,13 +8,17 @@ export const socialEnum = pgEnum("social_provider", ["twitter", "instagram", "yo
 
 export const socials = pgTable("socials", {
     id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
-    // Fixed: changed 'userId' to 'user_id' to match your database naming convention
     userId: integer("user_id")
         .notNull()
         .references(() => users.id, { onDelete: "cascade" }),
     socialMedia: socialEnum("social_media").notNull(),
-    socialUrl: text("social_url").notNull().unique(),
-    ...timestamps() // handles quick platform link changes
+    socialUrl: text("social_url").notNull(), // business account shared by different users so url cannot be unique
+    ...timestamps()
+},(table) => {
+    return {
+        // Ensures a single user doesn't duplicate the exact same URL link inside their own profile settings page
+        userUrlIdx: uniqueIndex("user_social_url_idx").on(table.userId, table.socialUrl)
+    };
 });
 
 // Relationship table for Follower/Following logic

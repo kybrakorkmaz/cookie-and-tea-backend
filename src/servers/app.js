@@ -1,12 +1,23 @@
 import express from "express";
 import {ENV} from "../../env.js";
 import {checkDatabaseConnection} from "../db/checkConnection.js";
-import profileRouter from "../routes/profile/profile.routes.js";
+import profileRouter from "../routes/profile/profile.route.js";
 import userRouter from "../routes/user/user.routes.js";
 import {errorHandler} from "../handlers/errorHandler.js";
-
+import cors from "cors";
 const app = express();
 
+// ALWAYS place CORS at the absolute top of your middleware stack!
+const corsOptions = {
+    // development -> test -> production
+    origin: process.env.NODE_ENV === "development" ? process.env.FRONTEND_ORIGIN
+        : (process.env.NODE_ENV === "test" ? process.env.FRONTEND_ORIGIN
+            : process.env.FRONTEND_ORIGIN),
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type'],
+}
+app.use(cors(corsOptions));
 // Middleware
 app.use(express.json());
 
