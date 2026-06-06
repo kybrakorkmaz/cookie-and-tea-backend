@@ -28,7 +28,7 @@ export default [
             "no-console": "off",             // Allow console.logs for backend debugging
             "prefer-const": "error",         // Suggests 'const' if variable isn't reassigned
             "eqeqeq": ["error", "always"],   // Forces '===' instead of '=='
-            "import/extensions": ["error", "ignorePackages"], // Allow package imports without .js, but require it for local imports
+            "import/extensions": ["error", "ignorePackages"], // Allow package imports without gallery.route.js, but require it for local imports
         },
     },
 ];
