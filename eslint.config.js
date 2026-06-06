@@ -3,7 +3,7 @@ import pluginImport from "eslint-plugin-import";
 export default [
     {
         // 1. Define which files to lint
-        files: ["**/*gallery.route.js"],
+        files: ["**/*.js"],
 
         // 2. Configure the environment (Node.js)
         languageOptions: {

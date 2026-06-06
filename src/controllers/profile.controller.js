@@ -5,7 +5,6 @@ import {
     getPanelInfo, findTwoFollowing,
     getUserAboutInfo, updateSocialMediaList
 } from "../services/profile.service.js";
-import {findUserByUsername} from "../repositories/auth.repository.js";
 
 // Called ONCE when the profile page loads
 export const getUserPanel = async (req, res, next) => {

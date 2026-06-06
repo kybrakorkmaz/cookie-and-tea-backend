@@ -4,9 +4,9 @@ import {
     getUserEarningsById,
     latestTwoFollowers,
     latestTwoFollowing,
-    topSupportedTwoPosts, updateSocialMediaById
+    topSupportedTwoPosts, updateSocialMediaById,
+    getImagesByUserId,
 } from "../repositories/profile.repository.js";
-import {setSocialMedia} from "../controllers/profile.controller.js";
 
 export const getPanelInfo = async (username) =>{
     const user = await findUserByUsername(username);
@@ -95,7 +95,8 @@ export const changeAbout = async (username, about) =>{
     // Short-circuit if new data matches exactly what's currently in the DB
     if(user.about === about){
         const error = new Error(`Nothing changed`);
-        error.statusCode =  304; // 304 Not Modified standard REST status code
+        error.statusCode = 400;
+        error.code = 'NO_OP';
         throw error;
     }
 
@@ -149,8 +150,9 @@ export const getTwoFollowers = async (username) =>{
     const response = await latestTwoFollowers(user.id);
 
     if(!response || response.length <=0){
-        const error = new Error(`No one follows.`);
-        error.statusCode =  304; // 304 Not Modified standard REST status code
+        const error = new Error(`No one is followed.`);
+        error.statusCode = 400;
+        error.code = 'NO_OP';
         throw error;
     }
 

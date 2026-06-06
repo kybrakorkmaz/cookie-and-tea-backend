@@ -6,12 +6,12 @@ Creator support app like Buy Me a Coffee or Ko-fi.
 
 ### Prerequisites
 - Docker and Docker Compose
-- Nodegallery.route.js (for local development)
+- Node.js (for local development)
 - Bash-compatible environment (Git Bash, WSL, or Linux/macOS)
 
 ## Environment Management
 
-This project uses coordinated bash scripts and `packagegallery.route.json` scripts to manage different environments (Development, Test, Production).
+This project uses coordinated bash scripts and `package.json` scripts to manage different environments (Development, Test, Production).
 
 ### Bash Scripts
 The core logic resides in `src/scripts/bash/`:
@@ -106,7 +106,7 @@ npm run prod:logs
 
 ## Local Development (Non-Docker)
 
-If you prefer to run the Nodegallery.route.js server directly on your host:
+If you prefer to run the Node.js server directly on your host:
 
 ```bash
 npm install

@@ -3,7 +3,14 @@ import {object, z} from "zod";
 // Validates the path parameter safely
 export const getProfileParamsSchema = z.object({
     params: z.object({
-        username: z.string({ required_error: "Username parameter is required" }).trim().min(1),
+        username: z.string({
+            error: (issue) => {
+                if (issue.code === "invalid_type" && issue.input === undefined) {
+                    return { message: "Username parameter is required" };
+                }
+                return {};
+            }
+        }).trim().min(1),
     }),
 });
 

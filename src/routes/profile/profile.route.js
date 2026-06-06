@@ -17,7 +17,7 @@ const router = express.Router();
 
 // Sub-Resources (First)
 router.get("/:username/intro", validate(getIntroQuerySchema), getUserIntro);
-router.get("/:username/earnings", getUserEarnedMoney); // Isolated target metric endpoint
+router.get("/:username/earnings", getUserEarnedMoney); // Isolated target metric endpoint todo validation
 router.get("/:username/about", getUserAbout);
 router.get("/:username/follow", getTwoFollowing);
 // Intercepting mutations with clean schema guards
