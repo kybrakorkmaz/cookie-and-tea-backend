@@ -122,17 +122,19 @@ export const updateSocialMediaList = async (username, socials) =>{
 }
 export const findTwoFollowing = async (username, isFollow) =>{
     const user = await findUserByUsername(username);
-    if(isFollow)    return; // false is following
     if(!user){
         const error = new Error(`User profile for '${username}' was not found`);
         error.statusCode = 404;
         throw error;
     }
+    if(isFollow) return []; // Explicitly return empty array payload instead of breaking flow
+
     const  response = await  latestTwoFollowing(user.id)
 
     if(!response || response.length <=0){
         const error = new Error(`No one is followed.`);
-        error.statusCode =  304; // 304 Not Modified standard REST status code
+        error.statusCode = 400;
+        error.code = 'NO_OP';
         throw error;
     }
 
