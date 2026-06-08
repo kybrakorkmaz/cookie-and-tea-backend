@@ -9,8 +9,17 @@ COMPOSE_FILE="docker-compose.dev.yml"
 
 # Load .env if exists
 if [ -f .env ]; then
-  # Use sed to remove carriage returns and export variables safely
-  export $(grep -v '^#' .env | sed 's/\r$//' | xargs)
+  echo "Loading development environment variables safely..."
+  while IFS= read -r line || [ -n "$line" ]; do
+    # Strip carriage returns first (Windows/CRLF fix)
+    clean_line=$(echo "$line" | sed 's/\r$//')
+
+    # Skip comments and lines that are completely empty
+    [[ "$clean_line" =~ ^#.*$ ]] || [ -z "$clean_line" ] && continue
+
+    # Export valid configurations securely
+    export "$clean_line"
+  done < .env
 fi
 
 case $COMMAND in
@@ -33,13 +42,13 @@ case $COMMAND in
     docker compose -p $PROJECT_NAME -f $COMPOSE_FILE exec api npm run db:migrate
     ;;
   restart)
-      echo "Hard-cycling development environment..."
-      # Drop the container and its anonymous tracking volumes
-      docker compose -p $PROJECT_NAME -f $COMPOSE_FILE down
-      # Force a fresh runtime recreation tracking live hard-drive modifications
-      docker compose -p $PROJECT_NAME -f $COMPOSE_FILE up -d --force-recreate "${@:2}"
-      echo "Environment hard-recreated successfully."
-      ;;
+    echo "Hard-cycling development environment..."
+    # Drop the container and its anonymous tracking volumes
+    docker compose -p $PROJECT_NAME -f $COMPOSE_FILE down
+    # Force a fresh runtime recreation tracking live hard-drive modifications
+    docker compose -p $PROJECT_NAME -f $COMPOSE_FILE up -d --force-recreate "${@:2}"
+    echo "Environment hard-recreated successfully."
+    ;;
   ps)
     docker compose -p $PROJECT_NAME -f $COMPOSE_FILE ps
     ;;

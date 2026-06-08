@@ -15,6 +15,7 @@ import {
 
 const router = express.Router();
 
+
 // Sub-Resources (First)
 router.get("/:username/intro", validate(getIntroQuerySchema), getUserIntro);
 router.get("/:username/earnings", getUserEarnedMoney); // Isolated target metric endpoint todo validation
@@ -27,7 +28,15 @@ router.put("/:username/socials", validate(socialSchema), setSocialMedia);
 
 // router.get("/:username/gallery", validate(getProfileParamsSchema), getUserGallery);
 
-
+/*
+// Stack them in order: Authed? -> Valid Data? -> Execute Controller
+router.put(
+    "/profile",
+    authenticateToken,          // 1. Checks who they are
+    validate(updateProfileSchema), // 2. Checks if their inputs are correct
+    updateProfileController     // 3. Runs the database action
+);
+ */
 // Generic Catch-all Parameter (Last)
 // If the URL is just "/alice", it doesn't match sub-routes, so it drops down here safely.
 router.get("/:username", validate(getProfileParamsSchema), getUserPanel);

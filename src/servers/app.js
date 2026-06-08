@@ -2,7 +2,7 @@ import express from "express";
 import {ENV} from "../../env.js";
 import {checkDatabaseConnection} from "../db/checkConnection.js";
 import profileRouter from "../routes/profile/profile.route.js";
-import userRouter from "../routes/user/user.routes.js";
+import authRouter from "../routes/auth/auth.route.js";
 import {errorHandler} from "../handlers/errorHandler.js";
 import cors from "cors";
 const app = express();
@@ -23,7 +23,7 @@ app.use(express.json());
 
 // Routes
 app.use("/api/v1/profile", profileRouter);
-app.use("/api/v1/users", userRouter);
+app.use("/api/v1/auth", authRouter);
 
 app.get("/", (req, res) => {
     res.json({
