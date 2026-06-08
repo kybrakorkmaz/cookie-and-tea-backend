@@ -22,12 +22,11 @@ CMD ["npm", "run", "dev"]
 # ============================================
 FROM base AS test
 ENV NODE_ENV=test
-COPY package*.json ./
-RUN npm install
+COPY package*.json package-lock.json ./
+RUN npm ci
 COPY . .
 EXPOSE 8001
 CMD ["npm", "run", "test"]
-
 # ============================================
 # Production
 # ============================================

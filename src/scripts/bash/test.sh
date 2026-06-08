@@ -17,17 +17,21 @@ fi
 
 # Helper function to wait for the database to be healthy
 wait_for_db() {
-  echo "Waiting for PostgreSQL to be ready..."
+  # Ensure POSTGRES_USER is set, default to "postgres" if missing
+  local db_user=${POSTGRES_USER:-postgres}
+  echo "Waiting for PostgreSQL to be ready (User: $db_user)..."
+
   # Timeout after 30 seconds
   for i in {1..10}; do
-    if docker compose -p $PROJECT_NAME -f $COMPOSE_FILE exec -T postgres pg_isready -U "$POSTGRES_USER" >/dev/null 2>&1; then
+    if docker compose -p $PROJECT_NAME -f $COMPOSE_FILE exec -T postgres pg_isready -U "$db_user" >/dev/null 2>&1; then
       echo "Database is ready!"
       return 0
     fi
     echo "Waiting for DB... ($i/10)"
     sleep 3
   done
-  echo "Error: Database failed to start in time."
+
+  echo "Error: Database failed to start in time (Check if POSTGRES_USER='$db_user' is correct)."
   exit 1
 }
 
