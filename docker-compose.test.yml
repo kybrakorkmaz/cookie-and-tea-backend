@@ -4,21 +4,22 @@ services:
       file: docker-compose.base.yml
       service: api-base
     build:
-      target: development
+      target: test
     container_name: cat_test_api
+    restart: no #Run the tests, print the results, and then let the container rest.
     ports:
       - "8001:8000"
     networks:
       - cat-test-network
     volumes:
-      - .:/app
+      - ${PWD}:/app
       - /app/node_modules
     env_file:
       - .env.test
     depends_on:
       postgres:
         condition: service_healthy
-    command: npm run dev
+    command: npm run test
 
   postgres:
     extends:
@@ -56,3 +57,4 @@ networks:
 
 volumes:
   postgres_test_data:
+  test_app_src:

@@ -13,8 +13,20 @@ FROM base AS development
 ENV NODE_ENV=development
 COPY package*.json ./
 RUN npm install
-EXPOSE 8000
+COPY . .
+EXPOSE 8003
 CMD ["npm", "run", "dev"]
+
+# ============================================
+# Test Stage
+# ============================================
+FROM base AS test
+ENV NODE_ENV=test
+COPY package*.json ./
+RUN npm install
+COPY . .
+EXPOSE 8001
+CMD ["npm", "run", "test"]
 
 # ============================================
 # Production

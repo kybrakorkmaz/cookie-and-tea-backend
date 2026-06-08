@@ -1,58 +1,74 @@
 #!/bin/bash
 
 # Test script for Cookie and Tea Backend
-# Usage: ./test.sh [run|up|down|migrate|logs]
-
 COMMAND=${1:-run}
 PROJECT_NAME="cat-test"
 COMPOSE_FILE="docker-compose.test.yml"
 
 # Load .env.test if exists
 if [ -f .env.test ]; then
-  # Use sed to remove carriage returns and export variables safely
-  export $(grep -v '^#' .env.test | sed 's/\r$//' | xargs)
+  echo "Loading test environment variables..."
+  while IFS= read -r line || [ -n "$line" ]; do
+    clean_line=$(echo "$line" | sed 's/\r$//')
+    [[ "$clean_line" =~ ^#.*$ ]] || [ -z "$clean_line" ] && continue
+    export "$clean_line"
+  done < .env.test
 fi
+
+# Helper function to wait for the database to be healthy
+wait_for_db() {
+  echo "Waiting for PostgreSQL to be ready..."
+  # Timeout after 30 seconds
+  for i in {1..10}; do
+    if docker compose -p $PROJECT_NAME -f $COMPOSE_FILE exec -T postgres pg_isready -U "$POSTGRES_USER" >/dev/null 2>&1; then
+      echo "Database is ready!"
+      return 0
+    fi
+    echo "Waiting for DB... ($i/10)"
+    sleep 3
+  done
+  echo "Error: Database failed to start in time."
+  exit 1
+}
 
 case $COMMAND in
   run)
-    echo "Running full test suite in Docker..."
+    echo "Starting full test suite pipeline..."
     $0 up
-    
-    # Setup cleanup trap for run command
+
+    # Setup cleanup trap
     cleanup() {
-      echo "Interrupt received, cleaning up..."
+      echo -e "\nInterrupt received, cleaning up..."
       $0 down
       exit 1
     }
     trap cleanup INT TERM
 
+    wait_for_db
     $0 migrate
+
     echo "Executing tests..."
-    docker compose -p $PROJECT_NAME -f $COMPOSE_FILE exec api npm test
+    docker compose -p $PROJECT_NAME -f $COMPOSE_FILE exec -T api npm test
     RESULT=$?
-    
-    # Remove trap before explicit cleanup
+
     trap - INT TERM
     $0 down
     exit $RESULT
     ;;
   up)
-    echo "Starting test environment..."
     docker compose -p $PROJECT_NAME -f $COMPOSE_FILE up -d --build
     ;;
   down)
-    echo "Cleaning up test environment..."
     docker compose -p $PROJECT_NAME -f $COMPOSE_FILE down -v "${@:2}"
     ;;
   migrate)
-    echo "Waiting for database and running migrations..."
-    docker compose -p $PROJECT_NAME -f $COMPOSE_FILE exec api npm run db:migrate:test
+    echo "Running migrations..."
+    docker compose -p $PROJECT_NAME -f $COMPOSE_FILE exec -T api npm run db:migrate:test
     ;;
   logs)
     docker compose -p $PROJECT_NAME -f $COMPOSE_FILE logs -f "${@:2}"
     ;;
   *)
-    echo "Unknown command: $COMMAND"
     echo "Usage: $0 [run|up|down|migrate|logs]"
     exit 1
     ;;

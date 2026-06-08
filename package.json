@@ -9,29 +9,15 @@
     "health": "node src/servers/health.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+
     "db:generate": "dotenv -e .env -- drizzle-kit generate",
     "db:migrate": "dotenv -e .env -- node src/db/migrate.js",
-    "db:generate:test": "cross-env NODE_ENV=test node --env-file=.env.test node_modules/drizzle-kit/bin.cjs generate",
     "db:migrate:test": "cross-env NODE_ENV=test node --env-file=.env.test src/db/migrate.js",
     "test": "cross-env NODE_ENV=test node --experimental-vm-modules --env-file=.env.test node_modules/jest/bin/jest.js --runInBand --forceExit",
-    "docker:up": "bash src/scripts/bash/dev.sh up",
-    "docker:down": "bash src/scripts/bash/dev.sh down",
-    "docker:down:v": "bash src/scripts/bash/dev.sh down -v",
-    "docker:logs": "bash src/scripts/bash/dev.sh logs",
-    "docker:restart": "bash src/scripts/bash/dev.sh restart",
-    "docker:ps": "bash src/scripts/bash/dev.sh ps",
-    "docker:migrate": "bash src/scripts/bash/dev.sh migrate",
+
+    "docker:dev": "bash src/scripts/bash/dev.sh",
     "test:docker": "bash src/scripts/bash/test.sh run",
-    "test:docker:up": "bash src/scripts/bash/test.sh up",
-    "test:docker:down": "bash src/scripts/bash/test.sh down",
-    "test:docker:logs": "bash src/scripts/bash/test.sh logs",
-    "test:docker:migrate": "bash src/scripts/bash/test.sh migrate",
-    "test:docker:watch": "cross-env NODE_ENV=test node --experimental-vm-modules --env-file=.env.test node_modules/.bin/jest --watch --runInBand",
-    "prod:up": "bash src/scripts/bash/prod.sh up",
-    "prod:down": "bash src/scripts/bash/prod.sh down",
-    "prod:down:v": "bash src/scripts/bash/prod.sh down -v",
-    "prod:logs": "bash src/scripts/bash/prod.sh logs",
-    "prod:ps": "bash src/scripts/bash/prod.sh ps"
+    "prod": "bash src/scripts/bash/prod.sh"
   },
   "repository": {
     "type": "git",

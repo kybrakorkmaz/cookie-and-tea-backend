@@ -9,8 +9,17 @@ COMPOSE_FILE="docker-compose.prod.yml"
 
 # Load .env.production if exists
 if [ -f .env.production ]; then
-  # Use sed to remove carriage returns and export variables safely
-  export $(grep -v '^#' .env.production | sed 's/\r$//' | xargs)
+  echo "Loading production environment variables safely..."
+  while IFS= read -r line || [ -n "$line" ]; do
+    # Strip carriage returns first (Windows/CRLF fix)
+    clean_line=$(echo "$line" | sed 's/\r$//')
+
+    # Skip comments and lines that are completely empty
+    [[ "$clean_line" =~ ^#.*$ ]] || [ -z "$clean_line" ] && continue
+
+    # Export valid configurations securely
+    export "$clean_line"
+  done < .env.production
 fi
 
 case $COMMAND in

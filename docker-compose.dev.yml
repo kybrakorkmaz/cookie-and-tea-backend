@@ -33,7 +33,11 @@ services:
       - "127.0.0.1:5434:5432"
     volumes:
       - postgres_dev_data:/var/lib/postgresql/data
-
+    healthcheck: # this explicitly to prevent the API from waiting forever
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
   pgAdmin:
     image: dpage/pgadmin4
     container_name: cat_dev_pgadmin
