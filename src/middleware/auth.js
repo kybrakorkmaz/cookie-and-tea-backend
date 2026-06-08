@@ -1,46 +1,48 @@
-import {ENV} from "../../env.js";
+import { ENV } from "../../env.js";
 import jwt from "jsonwebtoken";
 
 export const authenticateToken = (req, res, next) => {
-    try{
-        // authorization header
-        const authHeader = req.Headers["authorization"];
-        // extract the token from "Bearer <token>"
-        const token = authHeader && authHeader.split(" ")[1];
+    try {
+        // Correct access using Express lowercase req.headers dictionary
+        const authHeader = req.headers["authorization"];
 
-        if(!token){
+        // Enforce strict Bearer scheme prefix verification with an early exit
+        if (!authHeader || !authHeader.startsWith("Bearer ")) {
             const error = new Error("Access token missing or malformed");
-            error.statusCode=401;
+            error.statusCode = 401;
             return next(error);
         }
 
-        // verify the token signature and expiration
+        // Safely extract the token string component after the space index
+        const token = authHeader.split(" ")[1];
+
+        // Verify the token signature and expiration boundary controls
         const jwtSecret = ENV.JWT_SECRET;
 
         jwt.verify(token, jwtSecret, (err, decodedPayload) => {
-            if(err){
-                // If token is expired or altered
+            if (err) {
+                // If token is expired or altered maliciously
                 const error = new Error(
                     err.name === "TokenExpiredError"
-                    ? "Session expired, please login again"
+                        ? "Session expired, please login again"
                         : "Invalid authentication token"
                 );
                 error.statusCode = 403;
                 return next(error);
             }
 
-            // attach the verified payload to the request object
+            // Attach the verified operational payload properties to the request execution context
             req.user = {
                 id: decodedPayload.userId,
                 username: decodedPayload.username,
                 email: decodedPayload.email
-            }
+            };
 
-            // Authentication completed successfully, proceed to the next middleware or controller
+            // Authentication completed successfully, proceed down the chain
             next();
-        })
-    }catch (error){
-        // Fallback for any structural execution errors
+        });
+    } catch (error) {
+        // Fallback catch block for any unexpected runtime execution breaks
         next(error);
     }
-}
+};

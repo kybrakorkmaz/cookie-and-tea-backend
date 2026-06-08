@@ -127,10 +127,16 @@ describe("Auth User Registration Integration Suit with Live Test DB", () =>{
             expect(updatedDbUser.status).toBe("active");
         });
 
-        it("should return 400 Bad Request if the verification token is missing", async () =>{
+        it("should return 400 Bad Request if the verification token is invalid", async () =>{
             const response = await request(app).get("/api/v1/auth/verify-email?token=invalid_garbage_token");
             expect(response.status).toBe(400);
             expect(response.body.message).toContain("Invalid verification link");
+        });
+
+        it("should return 400 Bad Request if the verification token is missing", async () => {
+            const response = await request(app).get("/api/v1/auth/verify-email");
+            expect(response.status).toBe(400);
+            expect(response.body.message).toBeDefined();
         });
     })
 })

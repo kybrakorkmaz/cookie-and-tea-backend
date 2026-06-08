@@ -15,7 +15,10 @@ const generateToken = async (payload) => {
 }
 export const verifyUserToken = async (token) => {
     try{
-        const decoded = jwt.verify(token, ENV.JWT_SECRET);
+        const decoded = jwt.verify(token, ENV.JWT_SECRET, {
+            issuer: "cat-app",
+            audience: "cat-app-users"
+        });
 
         // update user status in DB from pending to active
         const updatedUser = await updateUserStatus(decoded.userId, "active");
@@ -26,14 +29,17 @@ export const verifyUserToken = async (token) => {
         }
         return updatedUser;
     }catch (err){
-        if(err.name === "TokenExpiredError"){
-            const error = new Error ("Verification link expired. Please sign up again.");
+        if (err.name === "TokenExpiredError") {
+            const error = new Error("Verification link expired. Please sign up again.");
             error.statusCode = 400;
             throw error;
         }
-        const error = new Error("Invalid verification link.");
-        error.statusCode = 400;
-        throw error;
+        if (err.name === "JsonWebTokenError") {
+            const error = new Error("Invalid verification link.");
+            error.statusCode = 400;
+            throw error;
+        }
+        throw err;
     }
 }
 const hashPassword = async (password) => {
@@ -65,10 +71,11 @@ export const registerNewUser = async (name, username, email, password) => {
         const token = await generateToken(payload);
 
         // Construct verification URL pointing to your backend endpoint
-        const verificationUrl = `${ENV.BACKEND_URL}/api/auth/verify-email?token=${token}`;
+        const verificationUrl = `${ENV.BACKEND_URL}/api/v1/auth/verify-email?token=${token}`;
 
         // send the email asynchronously
         sendEmail({
+            to: newUser.email,
             subject: "Welcome! Please verify your email",
             message: `Hi ${newUser.name}, verify your account here: ${verificationUrl}`,
             html: `<p>Hi ${newUser.name},</p><p>Please click <a href="${verificationUrl}">here</a> to verify your account.</p>`

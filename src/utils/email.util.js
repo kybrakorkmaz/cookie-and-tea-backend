@@ -14,7 +14,7 @@ const transporter = nodeMailer.createTransport({
 
 export const sendEmail = async(options) => {
     const mailOptions = {
-        from: `"${ENV.FROM_NAME}" <${ENV.FROM_EMAIL}`,
+        from: `"${ENV.FROM_NAME}" <${ENV.FROM_EMAIL}>`,
         to: options.email,
         subject: options.subject,
         text: options.message,
