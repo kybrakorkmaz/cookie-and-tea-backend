@@ -25,6 +25,16 @@ const envSchema = z.object({
         }
     }, { message: "Invalid DB URL scheme (must be postgres:// or postgresql://)" }),
     JWT_SECRET: z.string().min(1, { message: "JWT_SECRET is required" }),
+
+    // Modern SMTP Config updates for Mailtrap Sandbox environments
+    EMAIL_HOST: z.string().min(1, { message: "EMAIL_HOST routing target is required" }),
+    EMAIL_PORT: z.coerce.number().int().default(2525), // Coerces numeric strings safely from env
+    EMAIL_USERNAME: z.string().min(1, { message: "EMAIL_USERNAME credential token is required" }),
+    EMAIL_PASSWORD: z.string().min(1, { message: "EMAIL_PASSWORD credential token is required" }),
+
+    // Optional but highly recommended: clean branding configurations
+    FROM_NAME: z.string().default("Cookie & Tea App"),
+    FROM_EMAIL: z.string().email().default("noreply@cookieandtea.com")
 });
 
 // Parse and export

@@ -12,6 +12,8 @@ import {actionTimestamp, timestamps} from "./common.js";
 
 // Defined roles for access control in Express middleware
 export const roleEnum = pgEnum("role", ["user", "admin"]);
+// User account status
+export const statusEnum = pgEnum("status", ["pending", "active", "suspended"]);
 
 // Primary user table - renamed to 'users' to avoid Postgres reserved word conflicts
 export const users = pgTable("users", {
@@ -20,6 +22,7 @@ export const users = pgTable("users", {
     username: varchar("username", { length: 255 }).notNull().unique(),
     email: varchar("email", { length: 255 }).notNull().unique(),
     role: roleEnum("role").default("user").notNull(),
+    status: statusEnum("status").default("pending").notNull(),
     hashedPassword: varchar("hashed_password", { length: 255 }).notNull(),
     profileImage: text("profile_image"),
     backgroundImage: text("background_image"),

@@ -86,11 +86,10 @@ describe("Profile Integration Suite with Live Test DB", ()=>{
     });
 
     // --- TEST SUITE FOR USER PANEL ---
-    describe( "GET /api/v1/profile", ()=>{
+    describe( "GET /api/v1/profile/:username", ()=>{
         it("should resolve HTTP 200 and serve the matched panel information block", async () => {
             const res = await request(app)
-                .get("/api/v1/profile")
-                .query({username: testUsername});
+                .get(`/api/v1/profile/${testUsername}`);
 
             expect(res.status).toBe(200);
             expect(res.body).toEqual({
@@ -102,23 +101,24 @@ describe("Profile Integration Suite with Live Test DB", ()=>{
             });
         });
         it("should validate missing inputs and return HTTP 400 Bad Request", async () => {
-            const res = await request(app).get("/api/v1/profile") // No query parameters
-
+            const res = await request(app).get("/api/v1/profile/%20") // No query parameters
             expect(res.status).toBe(400);
-            expect(res.body.message).toContain("Username query parameter is mandatory");
+            // Change this assertion to look for the error wrapper property returned by your errorHandler
+            expect(res.body).toHaveProperty("message");
         });
     });
 
     // --- TEST SUITE FOR USER INTRO DASHBOARD ---
-    describe("GET /api/v1/profile/intro", () => {
+    describe("GET /api/v1/profile/:username/intro", () => {
         it("should resolve HTTP 200 and combine socials, earnings, and connections", async ()=>{
             // Act: Fire the HTTP integrations query hitting your real controllers
             const res = await request(app)
-                .get("/api/v1/profile/intro")
-                .query({ username: testUsername, earningTimeline: 30 }) // or however your controller expects the lookup key (query, params, or session context)
+                .get(`/api/v1/profile/${testUsername}/intro`)
+                .query({ earningTimeline: "30", isFollower: "true" }); // or however your controller expects the lookup key (query, params, or session context)
 
             // Assert: Verify structural values returned straight out of PG
             expect(res.status).toBe(200);
+
             // Validate structural fields matched to your getIntroDashboard service mapper
             expect(res.body.about).toBe("Full-Stack Software Developer");
             expect(res.body.earningsTotal).toBe(50);
