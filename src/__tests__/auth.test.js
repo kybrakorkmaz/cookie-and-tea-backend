@@ -138,5 +138,62 @@ describe("Auth User Registration Integration Suit with Live Test DB", () =>{
             expect(response.status).toBe(400);
             expect(response.body.message).toBeDefined();
         });
+    });
+
+    // -- STEP 3: TEST LOGIN
+    describe("GET /api/v1/auth/login", () => {
+        it("should log in successfully using a valid USERNAME and set a session cookie", async () =>{
+            const response = await request(app)
+                .post("/api/v1/auth/login")
+                .send({
+                    identifier: registerPayload.username,// Using username as the identifier
+                    password: registerPayload.password,
+                });
+            // Assert response payload values
+            expect(response.status).toBe(200);
+            expect(response.body.status).toBe("success");
+            expect(response.body.message).toContain("Logged in successfully");
+            // Assert Cookie Integrity ( Checks headers instead of response  body)
+            const cookies = response.headers["set-cookie"];
+            expect(cookies).toBeDefined(); // Ensures cookies were sent
+            expect(cookies[0]).toContain("session_token")   // Ensures your specific cookie name exists
+        });
+
+        it("should log in successfully using a valid EMAIL set a session cookie", async () => {
+            const  response = await request(app)
+                .post("/api/v1/auth/login")
+                .send({
+                    identifier: registerPayload.email,
+                    password: registerPayload.password,
+                });
+            expect(response.status).toBe(200);
+            expect(response.body.status).toBe("success");
+            expect(response.body.message).toContain("Logged in successfully");
+
+            // Assert Cookie Integrity
+            const cookies = response.headers["set-cookie"];
+            expect(cookies).toBeDefined();
+            expect(cookies[0]).toContain("session_token");
+        });
+
+        it("should return 401 Unauthorized", async ()=>{
+            const response = await request(app)
+                .post("/api/v1/auth/login")
+                .send({
+                    identifier: registerPayload.username,
+                    password: "wrong_password_garbage"
+                });
+            expect(response.status).toBe(401);
+        });
+
+        it("should return 401 Unauthorized", async ()=>{
+            const response = await request(app)
+                .post("/api/v1/auth/login")
+                .send({
+                    identifier: registerPayload.email,
+                    password: "wrong_password_garbage"
+                });
+            expect(response.status).toBe(401);
+        });
     })
 })

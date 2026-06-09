@@ -6,7 +6,7 @@ services:
     build:
       target: test
     container_name: cat_test_api
-    restart: no #Run the tests, print the results, and then let the container rest.
+    restart: no
     ports:
       - "8001:8000"
     networks:
@@ -16,10 +16,12 @@ services:
       - /app/node_modules
     env_file:
       - .env.test
+    environment:
+      - IN_DOCKER=1
     depends_on:
       postgres:
         condition: service_healthy
-    command: npm run test
+    command: sleep infinity
 
   postgres:
     extends:

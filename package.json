@@ -15,9 +15,8 @@
     "db:migrate:test": "cross-env NODE_ENV=test node --env-file=.env.test src/db/migrate.js",
     "test": "cross-env NODE_ENV=test node --experimental-vm-modules --env-file=.env.test node_modules/jest/bin/jest.js --runInBand --forceExit",
 
-    "docker:dev": "bash src/scripts/bash/dev.sh",
-    "test:docker": "bash src/scripts/bash/test.sh run",
-    "prod": "bash src/scripts/bash/prod.sh"
+    "test:clean": "bash src/scripts/bash/test.sh clean",
+    "test:docker": "bash src/scripts/bash/test.sh run"
   },
   "repository": {
     "type": "git",

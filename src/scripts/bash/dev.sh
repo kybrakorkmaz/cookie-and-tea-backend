@@ -9,15 +9,14 @@ COMPOSE_FILE="docker-compose.dev.yml"
 
 # Load .env if exists
 if [ -f .env ]; then
-  echo "Loading development environment variables safely..."
+  echo "Loading environment variables safely..."
   while IFS= read -r line || [ -n "$line" ]; do
-    # Strip carriage returns first (Windows/CRLF fix)
+    # Clean Windows carriage returns
     clean_line=$(echo "$line" | sed 's/\r$//')
 
-    # Skip comments and lines that are completely empty
-    [[ "$clean_line" =~ ^#.*$ ]] || [ -z "$clean_line" ] && continue
+    # Skip if line is empty or starts with a comment hash
+    [[ -z "$clean_line" || "$clean_line" =~ ^# ]] && continue
 
-    # Export valid configurations securely
     export "$clean_line"
   done < .env
 fi
