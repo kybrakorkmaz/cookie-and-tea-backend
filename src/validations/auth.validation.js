@@ -1,4 +1,4 @@
-import {union, z} from "zod";
+import {z} from "zod";
 
 export const registerUserSchema = z.object({
     body: z.object({
@@ -18,8 +18,8 @@ export const registerUserSchema = z.object({
 export const loginUserSchema = z.object({
     body: z.object({
         identifier: z.string()
-            .min(3, "Identifier must be at least 3 characters long")
-            .trim(),
+            .trim()
+            .min(3, "Identifier must be at least 3 characters long"),
         password: z.string().min(8, "password must be at least 8 characters")
     })
 })

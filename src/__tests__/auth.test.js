@@ -27,7 +27,7 @@ describe("Auth User Integration Suit with Live Test DB", () =>{
     const purgeTestUsers = async () => {
         const targetUsers = await db.select({id: users.id})
             .from(users)
-            .where(like(users.username, "user_%"));
+            .where(like(users.username, "user\\_%"));
 
         if(targetUsers.length === 0) return;
         const userIds = targetUsers.map(u => u.id);

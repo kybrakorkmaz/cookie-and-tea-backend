@@ -128,7 +128,7 @@ export const login = async (identifier, password) => {
         }
 
         // Generate validation token payload
-        const payload = {userId: user.id, email: user.email};
+        const payload = {userId: user.id, email: user.email, username: user.username};
         const token = await generateToken(payload);
 
         return {

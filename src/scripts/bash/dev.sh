@@ -14,10 +14,13 @@ if [ -f .env ]; then
     # Clean Windows carriage returns
     clean_line=$(echo "$line" | sed 's/\r$//')
 
-    # Skip if line is empty or starts with a comment hash
-    [[ -z "$clean_line" || "$clean_line" =~ ^# ]] && continue
+    [[ -z "$clean_line" || "$clean_line" =~ ^[[:space:]]*# ]] && continue
 
-    export "$clean_line"
+    clean_line=$(echo "$clean_line" | xargs)
+
+    key=$(echo "$clean_line" | cut -d '=' -f 1)
+    value=$(echo "$clean_line" | cut -d '=' -f 2-)
+    export "$key=$value"
   done < .env
 fi
 
