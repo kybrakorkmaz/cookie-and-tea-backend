@@ -3,15 +3,26 @@ import {db} from "../db/client.js";
 import {eq} from "drizzle-orm";
 import {integer, text} from "drizzle-orm/pg-core";
 
+const authPayload = {
+    id: users.id,
+    name: users.name,
+    username: users.username,
+    email: users.email,
+    hashedPassword: users.hashedPassword,
+    status: users.status,
+    profileImage: users.profileImage,
+    backgroundImage: users.backgroundImage,
+    about: users.about
+}
+export const findUserByEmail = async (email) => {
+    const rows = await db.select(authPayload)
+        .from(users)
+        .where(eq(users.email, email))
+        .limit(1);
+    return rows[0] || null;
+}
 export const findUserByUsername = async (username) => {
-    const rows = await db.select({
-        id: users.id,
-        name: users.name,
-        username: users.username,
-        profileImage: users.profileImage,
-        backgroundImage: users.backgroundImage,
-        about: users.about
-    })
+    const rows = await db.select(authPayload)
         .from(users)
         .where(eq(users.username, username))
         .limit(1);

@@ -12,10 +12,16 @@ if [ -f ".env.test" ]; then
     # Clean Windows carriage returns (\r)
     clean_line=$(echo "$line" | sed 's/\r$//')
 
-    # Skip if line is empty or starts with a comment hash
-    [[ -z "$clean_line" || "$clean_line" =~ ^# ]] && continue
+    # Skip line if empty or if it contains an indented comment block
+    [[ -z "$clean_line" || "$clean_line" =~ ^[[:space:]]*# ]] && continue
 
-    export "$clean_line"
+    # Trim leading/trailing whitespace around the key=value assignment pairs
+    clean_line=$(echo "$clean_line" | xargs)
+
+    # Export key-value segments explicitly safely splitting them
+    key=$(echo "$clean_line" | cut -d '=' -f 1)
+    value=$(echo "$clean_line" | cut -d '=' -f 2-)
+    export "$key=$value"
   done < .env.test
 fi
 
@@ -50,8 +56,7 @@ case $COMMAND in
     # Force remove your exact database named data volume volume safely
     docker volume rm cat-test_postgres_test_data >/dev/null 2>&1 || true
 
-    # General volume prune sweep fallback
-    docker volume prune -f >/dev/null 2>&1
+    # Removed "docker volume prune -f" to protect unrelated host volumes from data loss
     echo "Environment cleanup finalized successfully."
     ;;
 
@@ -73,7 +78,13 @@ case $COMMAND in
 
     # Block execution until database availability checks respond
     wait_for_db
-    $0 migrate
+
+    #  Fail fast pattern implementation for schema changes
+    echo "Applying runtime scheme migrations..."
+    if ! $0 migrate; then
+        echo "CRITICAL ERROR: Database migration failed. Aborting test execution pipeline." >&2
+        exit 1
+    fi
 
     echo "Executing tests..."
     docker compose -p $PROJECT_NAME -f $COMPOSE_FILE exec -T api npm test
