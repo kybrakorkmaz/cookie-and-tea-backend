@@ -10,14 +10,16 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
 
+    "docker:dev": "bash src/scripts/bash/dev.sh",
+    "docker:prod": "bash src/scripts/bash/prod.sh",
+
     "db:generate": "dotenv -e .env -- drizzle-kit generate",
     "db:migrate": "dotenv -e .env -- node src/db/migrate.js",
     "db:migrate:test": "cross-env NODE_ENV=test node --env-file=.env.test src/db/migrate.js",
-    "test": "cross-env NODE_ENV=test node --experimental-vm-modules --env-file=.env.test node_modules/jest/bin/jest.js --runInBand --forceExit",
 
-    "docker:dev": "bash src/scripts/bash/dev.sh",
-    "test:docker": "bash src/scripts/bash/test.sh run",
-    "prod": "bash src/scripts/bash/prod.sh"
+    "test": "cross-env NODE_ENV=test node --experimental-vm-modules --env-file=.env.test node_modules/jest/bin/jest.js --runInBand --forceExit",
+    "test:clean": "bash src/scripts/bash/test.sh clean",
+    "test:docker": "bash src/scripts/bash/test.sh run"
   },
   "repository": {
     "type": "git",
@@ -34,6 +36,7 @@
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
     "bcrypt": "^6.0.0",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
