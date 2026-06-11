@@ -74,7 +74,7 @@ export const registerNewUser = async (name, username, email, password) => {
         const payload = { userId: newUser.id, email: newUser.email };
         const token = await generateToken(payload);
         // Construct verification URL pointing to your backend endpoint
-        const verificationUrl = `${ENV.BACKEND_URL}/api/v1/auth/verify-email?token=${token}`;
+        const verificationUrl = `${ENV.BASE_URL}/api/v1/auth/verify-email?token=${token}`;
 
         // send the email asynchronously
         sendEmail({
@@ -82,7 +82,11 @@ export const registerNewUser = async (name, username, email, password) => {
             subject: "Welcome! Please verify your email",
             message: `Hi ${newUser.name}, verify your account here: ${verificationUrl}`,
             html: `<p>Hi ${newUser.name},</p><p>Please click <a href="${verificationUrl}">here</a> to verify your account.</p>`
-        }).catch(err => console.error("Email failed to dispatch background task:", err));
+        }).catch(err => {
+            ///console.error("Email failed to dispatch background task:", err)
+            console.error("--- NODEMAILER CRASH DETAILS ---");
+            console.error(err);
+        });
 
         //  Do not return the hashed password back to the client
        return {
