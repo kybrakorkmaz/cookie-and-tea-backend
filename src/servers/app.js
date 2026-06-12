@@ -5,6 +5,7 @@ import profileRouter from "../routes/profile/profile.route.js";
 import authRouter from "../routes/auth/auth.route.js";
 import {errorHandler} from "../handlers/errorHandler.js";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 const app = express();
 
 // ALWAYS place CORS at the absolute top of your middleware stack!
@@ -19,6 +20,7 @@ const corsOptions = {
 }
 
 app.use(cors(corsOptions));
+app.use(cookieParser());
 // Middleware
 app.use(express.json());
 

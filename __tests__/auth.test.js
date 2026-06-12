@@ -1,12 +1,13 @@
 import {afterAll, beforeAll, describe, expect, it} from "@jest/globals";
-import {db, sql} from "../db/client.js";
-import {comments, donations, follows, posts, socials, users} from "../db/schema/index.js";
+import {db, sql} from "../src/db/client.js";
+import {comments, donations, follows, posts, socials, users} from "../src/db/schema/index.js";
 import {eq, inArray, like, or} from "drizzle-orm";
-import app from "../servers/app.js";
+import app from "../src/servers/app.js";
 import request from "supertest";
 import jwt from "jsonwebtoken";
-import {ENV} from "../../env.js";
+import {ENV} from "../env.js";
 import bcrypt from "bcrypt";
+import {purgeTestUsers, seedTestUser} from "./utils/testDb.util.js";
 
 describe("Auth User Integration Suit with Live Test DB", () =>{
 
@@ -23,31 +24,7 @@ describe("Auth User Integration Suit with Live Test DB", () =>{
             ...overrides // // Merges dynamic inputs (passing specific email formats etc)
         }
     }
-    // Cleanup function
-    const purgeTestUsers = async () => {
-        const targetUsers = await db.select({id: users.id})
-            .from(users)
-            .where(like(users.username, "user\\_%"));
 
-        if(targetUsers.length === 0) return;
-        const userIds = targetUsers.map(u => u.id);
-
-        // Clear out explicit child tables lacking automatic cascading options
-        await db.delete(donations).where(
-            or(inArray(donations.donatorId, userIds), inArray(donations.receiverId, userIds))
-        );
-        await db.delete(comments).where(inArray(comments.commenterId, userIds));
-
-        // Clear remaining dependent schemas
-        await db.delete(socials).where(inArray(socials.userId, userIds));
-        await db.delete(follows).where(
-            or(inArray(follows.followerId, userIds), inArray(follows.followingId, userIds))
-        );
-        await db.delete(posts).where(inArray(posts.userId, userIds));
-
-        // finally, safely delete the parent user records
-        await db.delete(users).where(inArray(users.id, userIds));
-    };
     // Setup: clean previous data and safely isolate environments
     beforeAll(async () =>{
         // Clean out stale data before execution
@@ -90,14 +67,8 @@ describe("Auth User Integration Suit with Live Test DB", () =>{
     // --- STEP 2: TEST EMAIL VERIFICATION
     describe("GET /api/v1/auth/verify-email", ()=>{
         it("should activate user status when a valid token is provided", async()=>{
-            const payload = generateUserPayload();
-            const [seededUser] = await db.insert(users).values({
-                name: payload.name,
-                username: payload.username,
-                email: payload.email,
-                hashedPassword: await bcrypt.hash(payload.password, 10),
-                status: "pending"
-            }).returning();
+            // Factory handles context creation and password hashing automatically
+            const seededUser = await seedTestUser({}, "pending");
 
             // Generate a valid mock verification token using the target payload pattern
             const mockToken = jwt.sign(
@@ -135,20 +106,13 @@ describe("Auth User Integration Suit with Live Test DB", () =>{
     // -- STEP 3: TEST LOGIN
     describe("POST /api/v1/auth/login", () => {
         it("should log in successfully using a valid USERNAME and set an HTTP-Only cookie", async () =>{
-            const payload = generateUserPayload();
-            await db.insert(users).values({
-                name: payload.name,
-                username: payload.username,
-                email: payload.email,
-                hashedPassword: await bcrypt.hash(payload.password, 10),
-                status: "active"
-            });
+            const testUser = await seedTestUser({}, "active");
 
             const response = await request(app)
                 .post("/api/v1/auth/login")
                 .send({
-                    identifier: payload.username,
-                    password: payload.password
+                    identifier: testUser.username,
+                    password: testUser.rawPassword
                 });
             // Assert response payload values
             expect(response.status).toBe(200);
@@ -162,20 +126,13 @@ describe("Auth User Integration Suit with Live Test DB", () =>{
         });
 
         it("should log in successfully using a valid EMAIL address", async () => {
-            const payload = generateUserPayload();
-            await db.insert(users).values({
-                name: payload.name,
-                username: payload.username,
-                email: payload.email,
-                hashedPassword: await bcrypt.hash(payload.password, 10),
-                status: "active"
-            });
+            const testUser = await seedTestUser({}, "active");
 
             const response = await request(app)
                 .post("/api/v1/auth/login")
                 .send({
-                    identifier: payload.email,
-                    password: payload.password
+                    identifier: testUser.email,
+                    password: testUser.rawPassword
                 });
             expect(response.status).toBe(200);
             expect(response.body.status).toBe("success");
@@ -188,19 +145,12 @@ describe("Auth User Integration Suit with Live Test DB", () =>{
         });
 
         it("should return 401 Unauthorized on invalid password credentials", async () => {
-            const payload = generateUserPayload();
-            await db.insert(users).values({
-                name: payload.name,
-                username: payload.username,
-                email: payload.email,
-                hashedPassword: await bcrypt.hash(payload.password, 10),
-                status: "active"
-            });
+            const testUser = await seedTestUser({}, "active");
 
             const response = await request(app)
                 .post("/api/v1/auth/login")
                 .send({
-                    identifier: payload.username,
+                    identifier: testUser.username,
                     password: "wrongPassword123"
                 });
 
@@ -209,24 +159,73 @@ describe("Auth User Integration Suit with Live Test DB", () =>{
         });
 
         it("should return 403 Forbidden if a pending user tries to log in", async () => {
-            const payload = generateUserPayload();
-            await db.insert(users).values({
-                name: payload.name,
-                username: payload.username,
-                email: payload.email,
-                hashedPassword: await bcrypt.hash(payload.password, 10),
-                status: "pending"
-            });
+            const testUser = await seedTestUser({}, "pending");
 
             const response = await request(app)
                 .post("/api/v1/auth/login")
                 .send({
-                    identifier: payload.username,
-                    password: payload.password
+                    identifier: testUser.username,
+                    password: testUser.rawPassword
                 });
 
             expect(response.status).toBe(403);
             expect(response.body.message).toBeDefined();
         });
+    });
+    // -- STEP 4: TEST LOGOUT
+    describe("POST /api/v1/auth/logout", () =>{
+        it("should logout successfully", async () =>{
+            await seedTestUser({}, "active");
+
+            const response = await request(app)
+                .post("/api/v1/auth/logout")
+                .send();
+            //
+
+            // Assert response status
+            expect(response.status).toBe(200);
+            expect(response.body.message).toBe("Logged out successfully.");
+
+            // Assert Cookie clearance configuration
+            const cookies = response.headers["set-cookie"];
+            expect(cookies).toBeDefined();
+
+            // Check that it's clearing the token specifically
+            expect(cookies[0]).toMatch(/^token=/);
+
+            // Verify the browser is instructed to expire it instantly
+            // (Express handles this by setting maxAge to 0 or mapping a 1970 Epoch expiration date
+            expect(cookies[0]).toMatch(/Max-Age=0/i);
+            expect(cookies[0]).toContain("HttpOnly");
+            expect(cookies[0]).toContain("SameSite=Strict");
+        });
     })
+
+    // -- STEP 5: FULL LIFECYCLE PROTECTED ROUTE VALIDATION
+    describe("Session Lifecycle Verification via Protected Profile Route", () => {
+        it("should grant access to profile when logged in, and cleanly revoke access after logging out", async () => {
+            const agent = request.agent(app);
+            const testUser = await seedTestUser({}, "active");
+
+            // 1. Log In to acquire the session cookie inside the agent tracking layer
+            await agent
+                .post("/api/v1/auth/login")
+                .send({
+                    identifier: testUser.username,
+                    password: testUser.rawPassword
+                });
+
+            // 2. Try to access the newly protected profile endpoint
+            const profileResponseBefore = await agent.get(`/api/v1/profile/${testUser.username}`);
+            expect(profileResponseBefore.status).toBe(200);
+            expect(profileResponseBefore.body).toBeDefined(); // Adjust this depending on what getUserPanel returns
+
+            // 3. Fire the logout request to destroy the cookie
+            await agent.post("/api/v1/auth/logout").send();
+
+            // 4. Try to hit the protected endpoint again now that the cookie is cleared
+            const profileResponseAfter = await agent.get("/api/v1/profile/${testUser.username");
+            expect(profileResponseAfter.status).toBe(401); // Asserts security successfully blocked access!
+        });
+    });
 })

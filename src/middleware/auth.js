@@ -3,18 +3,22 @@ import jwt from "jsonwebtoken";
 
 export const authenticateToken = (req, res, next) => {
     try {
-        // Correct access using Express lowercase req.headers dictionary
-        const authHeader = req.headers["authorization"];
+        // Look for the token in cookies first, fallback to authorization header
+        let token = req.cookies?.token;
+        if(!token){
+            // Correct access using Express lowercase req.headers dictionary
+            const authHeader = req.headers["authorization"];
+            if(authHeader && authHeader.startsWith("Bearer ")){
+                token = authHeader.split(" ")[1];
+            }
+        }
 
-        // Enforce strict Bearer scheme prefix verification with an early exit
-        if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        // If no token found anywhere, exit early
+        if (!token) {
             const error = new Error("Access token missing or malformed");
             error.statusCode = 401;
             return next(error);
         }
-
-        // Safely extract the token string component after the space index
-        const token = authHeader.split(" ")[1];
 
         // Verify the token signature and expiration boundary controls
         const jwtSecret = ENV.JWT_SECRET;

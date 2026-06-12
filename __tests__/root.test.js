@@ -1,7 +1,7 @@
 import { describe, it, expect } from '@jest/globals';
 import request from 'supertest';
-import app from '../servers/app.js';
-import {ENV} from '../../env.js';
+import app from '../src/servers/app.js';
+import {ENV} from '../env.js';
 
 describe('GET /', () => {
   it('returns welcome message and environment', async () => {
