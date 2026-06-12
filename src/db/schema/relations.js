@@ -10,7 +10,9 @@ export const userRelations = relations(users, ({ many }) => ({
     comments: many(comments),
     socials: many(socials),
     followers: many(follows, { relationName: "following" }),
-    following: many(follows, { relationName: "follower" })
+    following: many(follows, { relationName: "follower" }),
+    chatsStarted: many(conversations, { relationName: "chatParticipantOne" }),
+    chatsReceived: many(conversations, { relationName: "chatParticipantTwo" })
 }));
 
 export const sessionRelations = relations(sessions, ({ one }) => ({

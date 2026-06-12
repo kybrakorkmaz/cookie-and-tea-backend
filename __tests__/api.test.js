@@ -1,6 +1,6 @@
 import request from "supertest";
 import {describe, expect, it} from "@jest/globals";
-import app from "../servers/app.js";
+import app from "../src/servers/app.js";
 
 describe("GET /api/status", () => {
     it("should return a 200 status and a success message", async () =>{

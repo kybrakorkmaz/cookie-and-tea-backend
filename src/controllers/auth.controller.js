@@ -43,7 +43,8 @@ export const loginController = async (req, res, next) => {
             maxAge: 1*24*60*60*1000, // " Day in milliseconds
             httpOnly: true,          // Prevents Cross-Site Scripting (XSS) cookies access
             secure: ENV.NODE_ENV === "production", // HTTPS only in production
-            sameSite: "lax"          // Mitigates Cross-Site Request Forgery (CSRF)
+            sameSite: "strict",          // Mitigates Cross-Site Request Forgery (CSRF)
+            path: "/"
         }
 
         // Attach token context to response cookie header channel
@@ -54,6 +55,26 @@ export const loginController = async (req, res, next) => {
             status: "success",
             message: "Authentication verified successfully.",
             user
+        });
+    }catch (e){
+        next(e);
+    }
+}
+
+export const logoutController = async (req, res, next) => {
+    try{
+        // Clear the token cookie by setting its maxAge to 0 milliseconds
+        res.cookie("token", "", {
+            httpOnly: true,
+            secure: ENV.NODE_ENV === "production",
+            sameSite: "strict", // must match login
+            path: "/",
+            maxAge: 0 // tells the browser/Postman to delete the cookie instantly
+        });
+
+        return res.status(200).json({
+            status: "success",
+            message: "Logged out successfully."
         });
     }catch (e){
         next(e);

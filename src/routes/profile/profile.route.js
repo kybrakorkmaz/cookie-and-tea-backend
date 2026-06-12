@@ -12,10 +12,13 @@ import {
     getIntroQuerySchema,
     getProfileParamsSchema, socialSchema, updateAboutSchema,
 } from "../../validations/profile.validation.js";
+import {authenticateToken} from "../../middleware/auth.js";
 
 const router = express.Router();
 
-
+//  Top-Level Guard
+// all router are under this line are guarded by authenticateToken (cookie session)
+router.use(authenticateToken);
 // Sub-Resources (First)
 router.get("/:username/intro", validate(getIntroQuerySchema), getUserIntro);
 router.get("/:username/earnings", getUserEarnedMoney); // Isolated target metric endpoint todo validation
