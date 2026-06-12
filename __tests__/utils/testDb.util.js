@@ -100,10 +100,7 @@ export const seedCompleteProfileContext = async (uniqueId, rawPassword) => {
 export const purgeTestUsers = async (namespacePrefix = "test\\_") => {
     const targetUsers = await db.select({id: users.id})
         .from(users)
-        .where(
-            or(like(users.username, "test\\_%"),
-            like(users.username, "user\\_%"))
-        );
+        .where(like(users.username, `${namespacePrefix}%`));
 
     if(targetUsers.length === 0) return;
     const userIds = targetUsers.map(u => u.id);

@@ -224,7 +224,7 @@ describe("Auth User Integration Suit with Live Test DB", () =>{
             await agent.post("/api/v1/auth/logout").send();
 
             // 4. Try to hit the protected endpoint again now that the cookie is cleared
-            const profileResponseAfter = await agent.get("/api/v1/profile/${testUser.username");
+            const profileResponseAfter = await agent.get(`/api/v1/profile/${testUser.username}`);
             expect(profileResponseAfter.status).toBe(401); // Asserts security successfully blocked access!
         });
     });

@@ -8,12 +8,19 @@ import jwt from "jsonwebtoken";
  */
 export const createAuthenticatedAgent = async (app, username, rawPassword) => {
     const agent = request.agent(app);
-    await agent
+    const response = await agent
         .post("/api/v1/auth/login")
         .send({
             identifier: username,
             password: rawPassword
         });
+    // Fail fast if POST /api/v1/auth/login failed or dropped cookies completely
+    const cookies = response.headers["set-cookie"];
+    if (response.status !== 200 || !cookies || !cookies.some(c => c.startsWith("token="))) {
+        throw new Error(
+            `Failed to create authenticated agent for user '${username}'. Status: ${response.status}. Response: ${JSON.stringify(response.body)}`
+        );
+    }
     return agent;
 };
 
