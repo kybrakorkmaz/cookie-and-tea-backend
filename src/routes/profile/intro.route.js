@@ -1,24 +1,33 @@
 import express from "express";
-import {getIntroDashboard} from "../../services/profile.service.js";
-import {getIntroSchema} from "../../validations/profile.validation.js";
+import {
+    getTwoFollowing,
+    getUserAbout,
+    getUserEarnedMoney, getUserIntro,
+    setSocialMedia,
+    setUserAbout
+} from "../../controllers/profile.controller.js";
 import {validate} from "../../middleware/validate.js";
-const router = express.Router();
+import {getIntroQuerySchema, socialSchema, updateAboutSchema} from "../../validations/profile.validation.js";
 
-/**
- * Fetch all brief intro information about a user profile
- * GET /api/v1/profile/intro?username=someuser&earningTimeline=30&isFollower=true
- */
-router.get("/", validate(getIntroSchema), async (req, res, next) => {
-    try {
-        // Zod has already validated username and transformed timeline/isFollower for us!
-        const { username, earningTimeline, isFollower } = req.query;
 
-        const introDashboardData = await getIntroDashboard(username, earningTimeline, isFollower);
+const router = express.Router({mergeParams: true});
 
-        return res.status(200).json(introDashboardData);
-    } catch (e) {
-        next(e);
-    }
-});
+// Target: GET /api/v1/profile/:username/intro/
+router.get("/", validate(getIntroQuerySchema), getUserIntro);
+
+// Target: GET /api/v1/profile/:username/intro/earnings
+router.get("/earnings", getUserEarnedMoney);
+
+// Target: GET /api/v1/profile/:username/intro/about
+router.get("/about", getUserAbout);
+
+// Target: GET /api/v1/profile/:username/intro/follow
+router.get("/follow", getTwoFollowing);
+
+// Target: PUT /api/v1/profile/:username/intro/about
+router.put("/about", validate(updateAboutSchema), setUserAbout);
+
+// Target: PUT /api/v1/profile/:username/intro/socials
+router.put("/socials", validate(socialSchema), setSocialMedia);
 
 export default router;

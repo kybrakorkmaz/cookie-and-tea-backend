@@ -3,14 +3,14 @@ import {
     earnedMoney,
     getIntroDashboard,
     getPanelInfo, findTwoFollowing,
-    getUserAboutInfo, updateSocialMediaList
+    getUserAboutInfo, updateSocialMediaList, getGalleryByUserId, findUserPosts, updatePost, deletePost
 } from "../services/profile.service.js";
 
 // Called ONCE when the profile page loads
 export const getUserPanel = async (req, res, next) => {
     try {
-        const { username } = req.params; // Clean parameter pulling
-        const panelData = await getPanelInfo(username);
+        const user = req.resolvedUser; 
+        const panelData = await getPanelInfo(user);
         return res.status(200).json(panelData);
     } catch (e) {
         next(e);
@@ -20,10 +20,10 @@ export const getUserPanel = async (req, res, next) => {
 // Called when viewing the Intro tab
 export const getUserIntro = async (req, res, next) => {
     try {
-        const { username } = req.params;
+        const user = req.resolvedUser;
         const { earningTimeline, isFollower } = req.query; // Filters remain in query
 
-        const introData = await getIntroDashboard(username, earningTimeline, isFollower);
+        const introData = await getIntroDashboard(user, earningTimeline, isFollower);
         return res.status(200).json(introData);
     } catch (e) {
         next(e);
@@ -32,13 +32,13 @@ export const getUserIntro = async (req, res, next) => {
 
 export const getUserEarnedMoney = async (req, res, next) =>{
     try{
-        const {username} = req.params;
+        const user = req.resolvedUser;
         const {earningTimeline} = req.query; // Expects "30", "90", or "365"
 
         // Convert the string parameter safely to an integer
-        const dayLimit = parseInt(earningTimeline, 10) || 30;
+        const dayLimit = typeof earningTimeline === "number" ? earningTimeline : 30;
         // Process via business logic layer
-        const earningsData = await earnedMoney(username, dayLimit);
+        const earningsData = await earnedMoney(user, dayLimit);
         return res.status(200).json(earningsData);
     }catch (e){
         next(e); // Safe forwarding to your winston errorHandler
@@ -46,10 +46,10 @@ export const getUserEarnedMoney = async (req, res, next) =>{
 }
 export const getUserAbout = async (req,res,next) =>{
     try{
-        const {username} = req.params;
+        const user = req.resolvedUser;
 
         // Controller blindly delegates to service layer
-        const aboutText = await getUserAboutInfo(username);
+        const aboutText = await getUserAboutInfo(user);
         return res.status(200).json({
             about: aboutText
         });
@@ -60,11 +60,11 @@ export const getUserAbout = async (req,res,next) =>{
 export const setUserAbout = async (req,res,next) =>{
     try{
         // Enforcing authenticated session contexts or matching target route parameters
-        const { username } = req.params;
+        const user = req.resolvedUser;
         const { about } = req.body; // Read incoming text data from the JSON body payload!
 
         // Controller passes data down, expecting the service throw errors if invalid
-        const updatedProfile = await changeAbout(username, about);
+        const updatedProfile = await changeAbout(user, about);
 
         // Standard REST 200 OK Response passing structured state details back to frontend hooks
         return res.status(200).json({
@@ -77,10 +77,10 @@ export const setUserAbout = async (req,res,next) =>{
 }
 export const setSocialMedia = async (req, res, next) =>{
     try{
-        const {username} = req.params;
+        const user = req.resolvedUser;
         const {socials} = req.body; // Array extracted via Zod body wrapper
 
-        const updatedSocialsList = await updateSocialMediaList(username, socials);
+        const updatedSocialsList = await updateSocialMediaList(user, socials);
         return res.status(200).json({
             status: "success",
             socials: updatedSocialsList
@@ -91,13 +91,13 @@ export const setSocialMedia = async (req, res, next) =>{
 }
 export const getTwoFollowing = async (req, res, next) =>{
     try {
-        const { username } = req.params;
+        const user = req.resolvedUser;
         const { isFollower } = req.query;
 
-        // Convert query string parameter cleanly to boolean comparisons
-        const isFollowerBool = isFollower === "true";
+        // Clean query boolean transformation mirroring your schema expectations
+        const isFollowerBool = isFollower === "true" || isFollower === true;
 
-        const followList = await findTwoFollowing(username, isFollowerBool);
+        const followList = await findTwoFollowing(user, isFollowerBool);
 
         return res.status(200).json({
             follow: followList || []
@@ -109,11 +109,70 @@ export const getTwoFollowing = async (req, res, next) =>{
 // Called when viewing the Gallery tab
 export const getUserGallery = async (req, res, next) => {
     try {
-        const { username } = req.params;
-        const galleryData = await getGallery(username);
+        const user = req.resolvedUser;
+        const galleryData = await getGalleryByUserId(user);
         return res.status(200).json({ status: "success", data: galleryData });
     } catch (e) {
         next(e);
     }
 };
 
+export const profilePostsController = async (req, res, next) => {
+    try{
+       const user = req.resolvedUser;
+       const postsData = await findUserPosts(user);
+       return res.status(200).json({status: "success", data: postsData});
+    }catch (e){
+        next(e);
+    }
+}
+
+export const profilePostEditController = async (req, res, next) =>{
+    try{
+        const user  = req.resolvedUser;
+        const {id}= req.params;
+        const newData  = req.body;
+
+        // Requirement: User can only see own posts on posts section and can delete and update THEM
+        // We must check if the authenticated user is the one whose profile is being viewed
+        // OR simply trust the service layer if it checks userId vs postId.
+        // Actually, for profile tab, the user should be updating THEIR own post.
+        if (req.user.id !== user.id) {
+            const error = new Error("Unauthorized: You can only update your own posts.");
+            error.statusCode = 403;
+            throw error;
+        }
+
+        const updatedPost = await updatePost(user.id, id, newData);
+
+        return res.status(200).json({
+            status: "success",
+            data: updatedPost
+        })
+    }catch (e){
+        next(e);
+    }
+}
+
+export const profilePostDeleteController = async (req, res, next) =>{
+    try{
+        const user = req.resolvedUser;
+        const {id}= req.params;
+
+        if (req.user.id !== user.id) {
+            const error = new Error("Unauthorized: You can only delete your own posts.");
+            error.statusCode = 403;
+            throw error;
+        }
+
+        const deletedPost = await deletePost(user.id, id);
+
+        return res.status(200).json({
+            status: "success",
+            data: deletedPost
+        });
+
+    }catch (e){
+        next(e);
+    }
+}

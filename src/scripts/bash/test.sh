@@ -86,6 +86,11 @@ case $COMMAND in
         exit 1
     fi
 
+    echo "Seeding test database..."
+    if ! $0 seed; then
+        echo "WARNING: Database seeding failed. Continuing to tests anyway..." >&2
+    fi
+
     echo "Executing tests..."
     docker compose -p $PROJECT_NAME -f $COMPOSE_FILE exec -T api npm test
     RESULT=$?
@@ -106,6 +111,11 @@ case $COMMAND in
   migrate)
     echo "Running migrations..."
     docker compose -p $PROJECT_NAME -f $COMPOSE_FILE exec -T api npm run db:migrate:test
+    ;;
+
+  seed)
+    echo "Running seed..."
+    docker compose -p $PROJECT_NAME -f $COMPOSE_FILE exec -T api npm run db:seed:test
     ;;
 
   logs)

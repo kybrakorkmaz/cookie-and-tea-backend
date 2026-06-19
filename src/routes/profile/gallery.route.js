@@ -1,21 +1,9 @@
 import express from "express";
-import {validate} from "../../middleware/validate.js";
+import { getUserGallery } from "../../controllers/profile.controller.js";
 
-const router = express.Router();
+const router = express.Router({ mergeParams: true });
 
-/*router.get("/", validate(getGallerySchema), async (req, res, next) => {
-    try {
-        const { username } = req.query;
-
-        const galleryData = await getGallery(username);
-
-        return res.status(200).json({
-            status: "success",
-            data: galleryData
-        });
-    } catch (e) {
-        next(e);
-    }
-});*/
+// Target: GET /api/v1/profile/:username/gallery
+router.get("/", getUserGallery);
 
 export default router;

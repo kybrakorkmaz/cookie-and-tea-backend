@@ -21,6 +21,14 @@ export const findUserByEmail = async (email) => {
         .limit(1);
     return rows[0] || null;
 }
+export const findUserById = async (id) => {
+    const rows = await db.select(authPayload)
+        .from(users)
+        .where(eq(users.id, id))
+        .limit(1);
+    return rows[0] || null;
+};
+
 export const findUserByUsername = async (username) => {
     const rows = await db.select(authPayload)
         .from(users)

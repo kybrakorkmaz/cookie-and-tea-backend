@@ -60,7 +60,10 @@ async function runMigration() {
     }
 }
 
-runMigration().catch((err) => {
+runMigration().then(() => {
+    console.log("Migration sequence finalized.");
+    process.exit(0);
+}).catch((err) => {
     console.error("Fatal uncaught migration exception:", err);
     process.exit(1);
 });

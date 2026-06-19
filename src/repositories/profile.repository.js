@@ -1,6 +1,6 @@
 import {db} from "../db/client.js";
-import {users, socials, posts, follows} from "../db/schema/index.js";
-import {and, desc, eq, gte, sql, or, inArray} from "drizzle-orm";
+import {follows, posts, socials, users} from "../db/schema/index.js";
+import {and, desc, eq, gte, inArray, sql} from "drizzle-orm";
 
 export const findSocialsByUserId = async (userId) => {
     return db.select({
@@ -110,3 +110,8 @@ export const getImagesByUserId = async (userId) =>{
             )
         );
 }
+
+export const getAllUserPosts = async (userId) =>{
+    return db.select().from(posts).where(eq(posts.userId, userId));
+}
+

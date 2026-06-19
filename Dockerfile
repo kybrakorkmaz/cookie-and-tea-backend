@@ -42,7 +42,9 @@ RUN chown -R nodejs:nodejs /app
 USER nodejs
 EXPOSE 8000
 
+# Note: Container-level healthcheck is configured in docker-compose.prod.yml
+# Keep image clean; align paths if used standalone
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-CMD node src/server/health.route.js
+CMD node src/servers/health.js
 
 CMD ["npm", "start"]
