@@ -10,7 +10,7 @@ const router = express.Router();
 router.param("username", resolveGlobalUsername);
 
 // Public routes
-router.get("/:id", getPostController);
+router.get("/post/:id", getPostController);
 
 // Protected routes: Must be logged in to create, alter, or remove content
 router.use(authenticateToken);

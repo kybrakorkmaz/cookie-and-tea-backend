@@ -16,7 +16,7 @@ const router = express.Router({mergeParams: true});
 router.get("/", validate(getIntroQuerySchema), getUserIntro);
 
 // Target: GET /api/v1/profile/:username/intro/earnings
-router.get("/earnings", getUserEarnedMoney);
+router.get("/earnings", validate(getIntroQuerySchema), getUserEarnedMoney);
 
 // Target: GET /api/v1/profile/:username/intro/about
 router.get("/about", getUserAbout);

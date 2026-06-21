@@ -28,7 +28,7 @@ if(ENV.NODE_ENV === "production"){
     const client = postgres(localDbUrl, {
         // Optional: set max connections for local dev
         max: ENV.NODE_ENV === "test" ? 1 : 10,
-        onnotice: ENV.NODE_ENV === "development" ? logger.info : undefined
+        onnotice: ENV.NODE_ENV === "development" ? (msg) => logger.info(msg) : undefined
     });
     sql = client;
     db = drizzleLocal(client, { schema });

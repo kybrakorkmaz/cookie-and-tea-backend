@@ -5,8 +5,8 @@ export const getProfileParamsSchema = z.object({
     params: z.object({
         username: z.string({
             required_error: "Username parameter is required",
-            invalid_type_error: "Username must be a valid string context"
-        }).trim().min(1, { message: "Username cannot be empty" })
+            invalid_type_error: "Username must be a valid string"
+        }).trim().min(1, "Username cannot be empty")
     }),
 });
 
@@ -53,6 +53,6 @@ export const postQuerySchema = z.object({
     query: z.object({
         postId: z.string({
             required_error: "Post identifier query parameter is required"
-        }).uuid({ message: "Invalid post identifier format" }) // Switch to .regex(/^\d+$/) if using serial/integer IDs
+        }).uuid("Invalid post identifier format")
     })
 });

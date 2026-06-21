@@ -9,8 +9,6 @@ import {
 } from "../repositories/profile.repository.js";
 import {
     deletePostByIds,
-    findPostByIds,
-    getAllUserPostsFromDB,
     updatePostByIds
 } from "../repositories/post.repository.js";
 
@@ -124,71 +122,4 @@ export const getGalleryByUserId = async (user) => {
         images: flattenedImages
     };
 };
-
-export const findUserPosts = async (user) =>{
-    const databasePosts = await getAllUserPostsFromDB(user.id);
-
-    if (!databasePosts || databasePosts.length <= 0) {
-        const error = new Error("No post found!");
-        error.statusCode = 204;
-        throw error;
-    }
-
-    // Map database properties directly to frontend component layout values
-    return databasePosts.map(post => ({
-        post_id: post.id,
-        user_id: post.userId,
-        post_type: post.type,
-        post_header: post.header,
-        post_detail: post.content,
-        post_image: post.images || [],
-        post_video: post.videos || [],
-        comment_count: post.commentCount || 0,
-        donation_sum: post.donationSum || 0,
-        post_date: post.createdAt ? new Date(post.createdAt): "",
-        user: {
-            name: post.authorName,
-            username: post.authorUsername,
-            profileImage: post.authorProfileImage
-        }
-    }));
-}
-
-export const updatePost = async (userId, postId, newData) =>{
-    const isAuthorized = await findPostByIds(userId, postId);
-    if(!isAuthorized){
-        const error = new Error("Unauthorized request!");
-        error.statusCode = 401;
-        throw error;
-    }
-    const updatedPost = await updatePostByIds(userId, postId, newData);
-
-    if(!updatedPost){
-        const error = new Error("post couldn't be updated, try later!");
-        error.statusCode = 500;
-        throw error;
-    }
-
-    return updatedPost;
-}
-
-
-export const deletePost = async (userId, postId) =>{
-    const isAuthorized = await findPostByIds(userId, postId);
-    if(!isAuthorized){
-        const error = new Error("Unauthorized request!");
-        error.statusCode = 401;
-        throw error;
-    }
-
-    const deletedPost = await deletePostByIds(userId, postId);
-
-    if(!deletedPost){
-        const error = new Error("post couldn't be deleted, try later!");
-        error.statusCode = 500;
-        throw error;
-    }
-
-    return deletedPost;
-}
 

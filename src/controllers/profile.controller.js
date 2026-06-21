@@ -3,8 +3,9 @@ import {
     earnedMoney,
     getIntroDashboard,
     getPanelInfo, findTwoFollowing,
-    getUserAboutInfo, updateSocialMediaList, getGalleryByUserId, findUserPosts, updatePost, deletePost
+    getUserAboutInfo, updateSocialMediaList, getGalleryByUserId
 } from "../services/profile.service.js";
+import {deletePost, findAllPosts, updatePost} from "../services/posts.service.js";
 
 // Called ONCE when the profile page loads
 export const getUserPanel = async (req, res, next) => {
@@ -61,6 +62,13 @@ export const setUserAbout = async (req,res,next) =>{
     try{
         // Enforcing authenticated session contexts or matching target route parameters
         const user = req.resolvedUser;
+
+        if (req.user.id !== user.id) {
+            const error = new Error("Unauthorized: You can only modify your own profile.");
+            error.statusCode = 403;
+            throw error;
+        }
+
         const { about } = req.body; // Read incoming text data from the JSON body payload!
 
         // Controller passes data down, expecting the service throw errors if invalid
@@ -78,6 +86,13 @@ export const setUserAbout = async (req,res,next) =>{
 export const setSocialMedia = async (req, res, next) =>{
     try{
         const user = req.resolvedUser;
+
+        if (req.user.id !== user.id) {
+            const error = new Error("Unauthorized: You can only modify your own social links.");
+            error.statusCode = 403;
+            throw error;
+        }
+
         const {socials} = req.body; // Array extracted via Zod body wrapper
 
         const updatedSocialsList = await updateSocialMediaList(user, socials);
@@ -120,8 +135,8 @@ export const getUserGallery = async (req, res, next) => {
 export const profilePostsController = async (req, res, next) => {
     try{
        const user = req.resolvedUser;
-       const postsData = await findUserPosts(user);
-       return res.status(200).json({status: "success", data: postsData});
+       const allPostData = await findAllPosts(user.id);
+       return res.status(200).json({status: "success", data: allPostData});
     }catch (e){
         next(e);
     }
@@ -130,7 +145,7 @@ export const profilePostsController = async (req, res, next) => {
 export const profilePostEditController = async (req, res, next) =>{
     try{
         const user  = req.resolvedUser;
-        const {id}= req.params;
+        const {id}= req.params; // post id
         const newData  = req.body;
 
         // Requirement: User can only see own posts on posts section and can delete and update THEM
@@ -157,7 +172,7 @@ export const profilePostEditController = async (req, res, next) =>{
 export const profilePostDeleteController = async (req, res, next) =>{
     try{
         const user = req.resolvedUser;
-        const {id}= req.params;
+        const {id}= req.params; // post id
 
         if (req.user.id !== user.id) {
             const error = new Error("Unauthorized: You can only delete your own posts.");
@@ -167,7 +182,7 @@ export const profilePostDeleteController = async (req, res, next) =>{
 
         const deletedPost = await deletePost(user.id, id);
 
-        return res.status(200).json({
+        return res.status(204).json({
             status: "success",
             data: deletedPost
         });

@@ -36,6 +36,8 @@ export const topSupportedTwoPosts = async (userId) =>{
         header: posts.header,
         type: posts.type,
         content: posts.content,
+        commentCount: posts.commentCount,
+        donationSum: posts.donationSum,
         date:posts.createdAt
     }).from(posts)
         .where(eq(posts.userId, userId))
@@ -111,7 +113,4 @@ export const getImagesByUserId = async (userId) =>{
         );
 }
 
-export const getAllUserPosts = async (userId) =>{
-    return db.select().from(posts).where(eq(posts.userId, userId));
-}
 

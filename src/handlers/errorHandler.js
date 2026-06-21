@@ -2,31 +2,27 @@
 import {logger} from "../lib/logger.js";
 import {ENV} from "../../env.js";
 
-export const errorHandler = (err, req, res, next) =>{
+export const errorHandler = (err, req, res, next) => {
     // 1. Identify status code and message defaults
-    const statusCode = Number.isInteger(err?.statusCode) && err.statusCode >= 400 && err.statusCode <= 599
-        ? err.statusCode
-        : 500;
-
+    const statusCode = err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
-    // 2. Pass error metadata straight into the Winston logger.
-    // Winston handles printing this as clean terminal text (Dev) or flat JSON (Prod) automatically.
-    logger.error({
-        message: err.message,
+    // 2. Log the error using our logger
+    // We pass the whole error object plus some request details
+    logger.error(err, {
         statusCode,
-        route: req.originalUrl,
+        url: req.originalUrl,
         method: req.method,
-        stack: err.stack, // Line numbers showing exactly where the bug live
     });
 
-    // Return formatted JSON to the client app
+    // 3. Send the error response to the client
     res.status(statusCode).json({
-        status: statusCode >= 400 && statusCode < 500 ? "fail":"error",
-        message: ENV.NODE_ENV === "production" && statusCode === 500
-        ? "An unexpected error occurred" // Prevent leaking sensitive stack traces in prod
-        : message,
-        // Optional: Add a stack property helper only available on local dev systems
-        ...(ENV.NODE_ENV === "development" && {stack: err.stack})
+        status: statusCode >= 500 ? "error" : "fail",
+        message: (ENV.NODE_ENV === "production" && statusCode === 500)
+            ? "An unexpected error occurred"
+            : message,
+        // Only include the stack trace and extra details in development
+        ...(ENV.NODE_ENV === "development" && { stack: err.stack }),
+        ...(err.details && { errors: err.details })
     });
-}
+};

@@ -30,7 +30,12 @@ app.use(express.json());
 app.use("/api/v1/profile", profileRouter);
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/feed", feedRouter);
-app.use("/api/v1/posts", feedRouter); // Add legacy/compatibility alias for tests
+app.use("/api/v1/posts", feedRouter); 
+
+// Legacy/compatibility aliases for tests
+app.use("/api/profile", profileRouter);
+app.use("/api/auth", authRouter);
+app.use("/api/posts", feedRouter);
 
 app.get("/", (req, res) => {
     res.json({

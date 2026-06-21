@@ -2,43 +2,8 @@ import {follows, posts, users} from "../db/schema/index.js";
 import {and, desc, eq, inArray, or} from "drizzle-orm";
 import {db} from "../db/client.js";
 
-// Feed Page: Authorized user posts + posts of people that user follows
-export const getFeedTimelineFromDB = async (userId) =>{
-    // Find IDs of users that the current user follows
-    const followedUserIds = db
-        .select({id: follows.followingId})
-        .from(follows)
-        .where(eq(follows.followerId, userId)); // Fix: followerId
-
-    // Fetch posts with author metadata attached
-    return db
-        .select({
-            id: posts.id,
-            userId: posts.userId,
-            type: posts.type,
-            header: posts.header,
-            content: posts.content,
-            images: posts.images,
-            videos: posts.videos,
-            commentCount: posts.commentCount,
-            donationSum: posts.donationSum,
-            createdAt: posts.createdAt,
-            authorName: users.name,
-            authorUsername: users.username,
-            authorProfileImage: users.profileImage
-        })
-        .from(posts)
-        .innerJoin(users, eq(posts.userId, users.id))
-        .where(
-            or(
-                eq(posts.userId, userId),
-                inArray(posts.userId, followedUserIds)
-            )
-        ).orderBy(desc(posts.createdAt));
-}
-
 // Profile page: Authorized user's posts
-export const getAllUserPostsFromDB = async (userId) =>  {
+export const getUserAllPostsFromDB = async (userId) =>  {
     return db
         .select({
             id: posts.id,
@@ -85,7 +50,7 @@ export const updatePostByIds = async (userId, postId, newData) =>{
                 eq(posts.userId, userId),
                 eq(posts.id, postId)
             )
-        ).returning({ postId: posts.id });
+        ).returning();
 }
 
 export const deletePostByIds = async (userId, postId) => {
@@ -95,5 +60,5 @@ export const deletePostByIds = async (userId, postId) => {
                 eq(posts.userId, userId),
                 eq(posts.id, postId)
             )
-        ).returning({ postId: posts.id });
+        ).returning();
 };

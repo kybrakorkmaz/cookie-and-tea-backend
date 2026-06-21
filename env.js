@@ -34,7 +34,8 @@ const envSchema = z.object({
 
     // Optional but highly recommended: clean branding configurations
     FROM_NAME: z.string().default("Cookie & Tea App"),
-    FROM_EMAIL: z.string().email().default("noreply@cookieandtea.com")
+    FROM_EMAIL: z.string().email().default("noreply@cookieandtea.com"),
+    BYPASS_SECRET: z.string().default("secret-test-key")
 });
 
 // Parse and export

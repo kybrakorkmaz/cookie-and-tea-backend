@@ -88,7 +88,8 @@ case $COMMAND in
 
     echo "Seeding test database..."
     if ! $0 seed; then
-        echo "WARNING: Database seeding failed. Continuing to tests anyway..." >&2
+        echo "CRITICAL ERROR: Database seeding failed. Aborting test execution pipeline." >&2
+        exit 1
     fi
 
     echo "Executing tests..."

@@ -39,7 +39,7 @@ export const loginController = async (req, res, next) => {
 
         // Safely extract a custom header only allowed in non-production environments
         const isTestEnv = ENV.NODE_ENV === "test";
-        const hasBypassHeader = req.headers["x-test-bypass"] === "secret-test-key";
+        const hasBypassHeader = req.headers["x-test-bypass"] === ENV.BYPASS_SECRET;
         const shouldBypass = isTestEnv && hasBypassHeader;
 
         const {token, user} = await login(identifier, password, shouldBypass);

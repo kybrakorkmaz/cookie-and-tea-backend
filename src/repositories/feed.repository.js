@@ -2,16 +2,15 @@ import {db} from "../db/client.js";
 import {follows, posts, users} from "../db/schema/index.js";
 import {and, desc, eq, inArray, or} from "drizzle-orm";
 
-// Fetch author posts OR followed users' posts
+// Feed Page: Authorized user posts + posts of people that user follows
 export const getFeedTimelineFromDB = async (userId) =>{
-    // finding IDs of users the current account follows
+    // Find IDs of users that the current user follows
     const followedUserIds = db
-        .select({id: follows.followingId})
+        .select({followingId: follows.followingId})
         .from(follows)
-        .where(eq(follows.followerId, userId)); // Fix: should be followerId = current user
+        .where(eq(follows.followerId, userId)); // Fix: followerId
 
-    // fetch all posts where the author is the user themselves OR
-    // is in the followed list
+    // Fetch posts with author metadata attached
     return db
         .select({
             id: posts.id,
@@ -35,9 +34,9 @@ export const getFeedTimelineFromDB = async (userId) =>{
                 eq(posts.userId, userId),
                 inArray(posts.userId, followedUserIds)
             )
-        )
-        .orderBy(desc(posts.createdAt));
+        ).orderBy(desc(posts.createdAt));
 }
+
 
 export const createNewPost = async (postData) => {
     const result = await db.insert(posts).values(postData).returning();

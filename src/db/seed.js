@@ -1,9 +1,15 @@
 import { db, sql } from "./client.js";
 import { users, posts, comments, donations, follows, socials } from "./schema/index.js";
 import { faker } from "@faker-js/faker";
+import { ENV } from "../../env.js";
 import bcrypt from "bcrypt";
 
 async function seed() {
+    if (ENV.NODE_ENV === "production") {
+        console.error("CRITICAL SAFETY ERROR: Cannot run seeding in production environment!");
+        process.exit(1);
+    }
+
     console.log("Seeding process started...");
 
     try {
@@ -23,8 +29,8 @@ async function seed() {
         
         const userDatas = Array.from({ length: 10 }).map((_, i) => ({
             name: faker.person.fullName(),
-            username: i === 0 ? "testuser" : faker.internet.username(),
-            email: i === 0 ? "test@example.com" : faker.internet.email(),
+            username: i === 0 ? "testuser" : `user_${i}_${faker.string.alphanumeric(5)}`,
+            email: i === 0 ? "test@example.com" : `user${i}@example.com`,
             hashedPassword: passwordHash,
             role: i === 0 ? "admin" : "user",
             status: "active",

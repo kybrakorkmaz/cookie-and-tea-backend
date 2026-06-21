@@ -1,17 +1,11 @@
 import {findUserByUsername, findUserById} from "../repositories/auth.repository.js";
 
-export const resolveUserById = async (req, res, next) => {
+const resolve = async (req, next, finder, identifier, errorType) => {
     try {
-        if (!req.user || !req.user.id) {
-            const error = new Error("User not authenticated for resolution");
-            error.statusCode = 401;
-            throw error;
-        }
-
-        const user = await findUserById(req.user.id);
+        const user = await finder(identifier);
         
         if (!user) {
-            const error = new Error(`User profile with ID '${req.user.id}' was not found`);
+            const error = new Error(`${errorType} '${identifier}' was not found`);
             error.statusCode = 404;
             throw error;
         }
@@ -23,26 +17,21 @@ export const resolveUserById = async (req, res, next) => {
     }
 };
 
-export const resolveGlobalUsername = async (req, res, next, username) => {
-    try {
-        const trimmedUsername = username.trim();
-        if (trimmedUsername === "") {
-            const error = new Error("Username cannot be empty");
-            error.statusCode = 400;
-            throw error;
-        }
-
-        const user = await findUserByUsername(trimmedUsername);
-        
-        if (!user) {
-            const error = new Error(`User profile for '${username}' was not found`);
-            error.statusCode = 404;
-            throw error;
-        }
-
-        req.resolvedUser = user;
-        next();
-    } catch (e) {
-        next(e);
+export const resolveUserById = async (req, res, next) => {
+    if (!req.user || !req.user.id) {
+        const error = new Error("User not authenticated for resolution");
+        error.statusCode = 401;
+        return next(error);
     }
+    await resolve(req, next, findUserById, req.user.id, "User profile with ID");
+};
+
+export const resolveGlobalUsername = async (req, res, next, username) => {
+    const trimmedUsername = username.trim();
+    if (trimmedUsername === "") {
+        const error = new Error("Username cannot be empty");
+        error.statusCode = 400;
+        return next(error);
+    }
+    await resolve(req, next, findUserByUsername, trimmedUsername, "User profile for");
 };

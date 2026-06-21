@@ -1,6 +1,6 @@
 // Cleanup function
 import {db} from "../../src/db/client.js";
-import {inArray, like, or} from "drizzle-orm";
+import {eq, inArray, like, or} from "drizzle-orm";
 import {comments, donations, follows, posts, socials, users} from "../../src/db/schema/index.js";
 import bcrypt from "bcrypt";
 
@@ -94,6 +94,16 @@ export const seedCompleteProfileContext = async (uniqueId, rawPassword) => {
     return { user, follower };
 };
 
+export const generateTestPost = async (userOrId)=>{
+    const userId = typeof userOrId === 'object' ? userOrId.id : userOrId;
+    const [post] = await db.insert(posts).values({
+        userId: userId,
+        type: "text",
+        header: "test title",
+        content: "test content"
+    }).returning();
+    return post;
+}
 /**
  * Sweeps the test database clean of any mock entities matching the test namespace patterns.
  */
