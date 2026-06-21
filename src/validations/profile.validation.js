@@ -4,13 +4,9 @@ import {object, z} from "zod";
 export const getProfileParamsSchema = z.object({
     params: z.object({
         username: z.string({
-            error: (issue) => {
-                if (issue.code === "invalid_type" && issue.input === undefined) {
-                    return { message: "Username parameter is required" };
-                }
-                return {};
-            }
-        }).trim().min(1),
+            required_error: "Username parameter is required",
+            invalid_type_error: "Username must be a valid string"
+        }).trim().min(1, "Username cannot be empty")
     }),
 });
 
@@ -24,7 +20,11 @@ export const getIntroQuerySchema = z.object({
             const num = Number(val);
             return Number.isInteger(num) && num > 0 ? num : 30;
         }),
-        isFollower: z.string().optional().transform((val) => val !== "false"),
+        isFollower: z.string().optional().transform((val) => {
+            if (val === undefined) return false; // Default fallback to false if omitted
+            return val === "true";
+        })
+
     }),
 });
 
@@ -45,5 +45,14 @@ export const socialSchema = z.object({
                 socialUrl: z.string().url({ message: "Invalid social profile URL address format" })
             })
         )
+    })
+});
+
+// Validates query parameters for post mutation layers (?postId=...)
+export const postQuerySchema = z.object({
+    query: z.object({
+        postId: z.string({
+            required_error: "Post identifier query parameter is required"
+        }).uuid("Invalid post identifier format")
     })
 });

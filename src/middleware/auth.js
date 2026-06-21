@@ -1,52 +1,54 @@
 import { ENV } from "../../env.js";
 import jwt from "jsonwebtoken";
 
+/**
+ * Middleware to verify the user's JWT token.
+ * It checks for the token in cookies or the Authorization header.
+ */
 export const authenticateToken = (req, res, next) => {
     try {
-        // Look for the token in cookies first, fallback to authorization header
+        // 1. Try to find the token
+        // Check cookies first (convenient for browsers), then fallback to Bearer header (for API clients)
         let token = req.cookies?.token;
-        if(!token){
-            // Correct access using Express lowercase req.headers dictionary
+
+        if (!token) {
             const authHeader = req.headers["authorization"];
-            if(authHeader && authHeader.startsWith("Bearer ")){
+            if (authHeader && authHeader.startsWith("Bearer ")) {
                 token = authHeader.split(" ")[1];
             }
         }
 
-        // If no token found anywhere, exit early
+        // 2. If no token is found, return 401 Unauthorized
         if (!token) {
-            const error = new Error("Access token missing or malformed");
+            const error = new Error("Authentication required: No token provided");
             error.statusCode = 401;
             return next(error);
         }
 
-        // Verify the token signature and expiration boundary controls
-        const jwtSecret = ENV.JWT_SECRET;
-
-        jwt.verify(token, jwtSecret, (err, decodedPayload) => {
+        // 3. Verify the token
+        jwt.verify(token, ENV.JWT_SECRET, (err, decodedPayload) => {
             if (err) {
-                // If token is expired or altered maliciously
-                const error = new Error(
-                    err.name === "TokenExpiredError"
-                        ? "Session expired, please login again"
-                        : "Invalid authentication token"
-                );
-                error.statusCode = 403;
+                const message = err.name === "TokenExpiredError"
+                    ? "Session expired, please login again"
+                    : "Invalid or tampered authentication token";
+
+                const error = new Error(message);
+                error.statusCode = 403; // Forbidden if token is invalid/expired
                 return next(error);
             }
 
-            // Attach the verified operational payload properties to the request execution context
+            // 4. Attach user data to the request object
+            // This allows subsequent controllers to know who is logged in
             req.user = {
                 id: decodedPayload.userId,
                 username: decodedPayload.username,
                 email: decodedPayload.email
             };
 
-            // Authentication completed successfully, proceed down the chain
             next();
         });
     } catch (error) {
-        // Fallback catch block for any unexpected runtime execution breaks
+        // Handle any unexpected runtime errors
         next(error);
     }
 };

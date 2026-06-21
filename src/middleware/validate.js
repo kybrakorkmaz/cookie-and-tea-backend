@@ -1,29 +1,39 @@
 // Higher-order function validation middleware
 import {ZodError} from "zod";
 
-export const validate = (schema) =>{
-    return async (req, res, next)=>{
+export const validate = (schema) => {
+    return async (req, res, next) => {
         try {
-            // Validate incoming client payload
-            await schema.parseAsync({
+            // Validate the request (body, query, and params)
+            const parsedData = await schema.parseAsync({
                 body: req.body,
                 query: req.query,
                 params: req.params,
             });
-            next(); // Validation passed, proceed to controller.
-        }catch (error) {
-            // If Zod fails, format errors nicely and pass to error middleware
-            if(error instanceof ZodError){
-                const errorMessage = error.issues.map((err)=>`${err.path.join(".")}: ${err.message}`);
+            // Re-assign the normalized and sanitized states safely back to Express properties
+            req.body = parsedData.body || req.body;
+            req.query = parsedData.query || req.query;
+            req.params = parsedData.params || req.params;
 
-                // Create an inline error object with an HTTP status code
-                const validationError = new Error(`Validation failed: ${errorMessage.join(", ")}`);
+            // If validation is successful, go to the next middleware/controller
+            return next();
+        } catch (error) {
+            // If it's a Zod validation error, format it nicely
+            if (error instanceof ZodError) {
+                const formattedErrors = error.issues.map((issue) => ({
+                    field: issue.path.join("."),
+                    message: issue.message
+                }));
+
+                const validationError = new Error("Validation failed");
                 validationError.statusCode = 400;
+                validationError.details = formattedErrors;
 
-                return next(validationError); // Forward to centralized errorHandler
+                return next(validationError);
             }
-            // Catch-all to make sure unexpected errors (if not zod error) get forwarded to the error handler
-            next(error);
+
+            // For any other unexpected errors, pass them to the error handler
+            return next(error);
         }
     };
 };

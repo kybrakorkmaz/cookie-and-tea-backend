@@ -14,9 +14,11 @@
     "db:generate": "dotenv -e .env -- drizzle-kit generate",
     "db:migrate": "dotenv -e .env -- node src/db/migrate.js",
     "db:migrate:test": "cross-env NODE_ENV=test node --env-file=.env.test src/db/migrate.js",
+    "db:seed": "dotenv -e .env -- node src/db/seed.js",
+    "db:seed:test": "cross-env NODE_ENV=test node --env-file=.env.test src/db/seed.js",
     "test": "cross-env NODE_ENV=test node --experimental-vm-modules --env-file=.env.test node_modules/jest/bin/jest.js --runInBand --forceExit",
     "test:clean": "bash src/scripts/bash/test.sh clean",
-    "test:docker": "bash src/scripts/bash/test.sh run"
+    "test:docker": "bash src/scripts/bash/test.sh"
   },
   "repository": {
     "type": "git",
@@ -46,6 +48,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@faker-js/faker": "^10.5.0",
     "@jest/globals": "^30.4.0",
     "cross-env": "^10.1.0",
     "dotenv-cli": "^11.0.0",

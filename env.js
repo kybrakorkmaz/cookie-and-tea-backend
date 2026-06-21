@@ -34,7 +34,8 @@ const envSchema = z.object({
 
     // Optional but highly recommended: clean branding configurations
     FROM_NAME: z.string().default("Cookie & Tea App"),
-    FROM_EMAIL: z.string().email().default("noreply@cookieandtea.com")
+    FROM_EMAIL: z.email().default("noreply@cookieandtea.com"),
+    BYPASS_SECRET: z.string().min(1, { message: "BYPASS_SECRET configuration token is required" })
 });
 
 // Parse and export

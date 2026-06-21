@@ -1,4 +1,4 @@
-import {changeAboutByUsername, findUserByUsername} from "../repositories/auth.repository.js";
+import {changeAboutByUsername} from "../repositories/auth.repository.js";
 import {
     findSocialsByUserId,
     getUserEarningsById,
@@ -7,15 +7,12 @@ import {
     topSupportedTwoPosts, updateSocialMediaById,
     getImagesByUserId,
 } from "../repositories/profile.repository.js";
+import {
+    deletePostByIds,
+    updatePostByIds
+} from "../repositories/post.repository.js";
 
-export const getPanelInfo = async (username) =>{
-    const user = await findUserByUsername(username);
-    if(!user){
-        const error = new Error(`User profile for '${username}' was not found`);
-        error.statusCode = 404;
-        throw error;
-    }
-
+export const getPanelInfo = async (user) =>{
     // required header properties
     return {
         id: user.id,
@@ -26,15 +23,7 @@ export const getPanelInfo = async (username) =>{
     };
 };
 
-export const getIntroDashboard = async (username, timelineDays, isFollowerView) =>{
-    // Must pull the actual user profile info to safely read `about` fields
-    const user = await findUserByUsername(username);
-    if (!user) {
-        const error = new Error(`User profile for '${username}' was not found`);
-        error.statusCode = 404;
-        throw error;
-    }
-
+export const getIntroDashboard = async (user, timelineDays, isFollowerView) =>{
     // Execute unrelated DB tasks concurrently in parallel routines
     const [socialsList, earningData, topPosts] = await Promise.all([
         findSocialsByUserId(user.id),
@@ -42,49 +31,30 @@ export const getIntroDashboard = async (username, timelineDays, isFollowerView) 
         topSupportedTwoPosts(user.id)
     ]);
 
-    const connectionProfiles = isFollowerView
+    // Handle truthy string or boolean evaluations coming down from Zod's parse pipeline
+    const shouldFetchFollowers = isFollowerView === true || isFollowerView === "true";
+
+    const connectionProfiles = shouldFetchFollowers
         ? await latestTwoFollowers(user.id)
         : await latestTwoFollowing(user.id);
 
     return{
         about: user.about || "",
-        socials: socialsList || [], // Ensure it matches frontend layout arrays fallback
-        earningsTotal: earningData.total,
-        topSupportedPosts: topPosts,
-        recentConnections: connectionProfiles
+        socials: socialsList || [],
+        earningsTotal: earningData.total ?? 0,
+        topSupportedPosts: topPosts || [],
+        recentConnections: connectionProfiles || []
     }
 }
-export const earnedMoney = async (username, timeline) =>{
-    const user = await findUserByUsername(username);
-    if(!user){
-        const error = new Error(`User profile for '${username}' was not found`);
-        error.statusCode = 404;
-        throw error;
-    }
-
+export const earnedMoney = async (user, timeline) =>{
     return await getUserEarningsById(user.id, timeline);
 }
 
-export const getUserAboutInfo = async (username) => {
-    const user = await findUserByUsername(username);
-
-    // Service catches data absence and sets the standard semantic metadata
-    if (!user) {
-        const error = new Error(`User profile for '${username}' was not found`);
-        error.statusCode = 404;
-        throw error;
-    }
-
+export const getUserAboutInfo = async (user) => {
     return user.about ?? "This person is so lazy to introduce themselves.";
 }
 
-export const changeAbout = async (username, about) =>{
-    const user = await findUserByUsername(username);
-    if(!user){
-        const error = new Error(`User profile for '${username}' was not found`);
-        error.statusCode = 404;
-        throw error;
-    }
+export const changeAbout = async (user, about) =>{
     // Check for explicit undefined or null payloads
     if (about === undefined) {
         const error = new Error("Invalid payload: 'about' text property is missing");
@@ -101,7 +71,7 @@ export const changeAbout = async (username, about) =>{
     }
 
     // Process and save changes via the Data Access Layer
-    const result = await changeAboutByUsername(username, about);
+    const result = await changeAboutByUsername(user.username, about);
     if (!result) {
         const error = new Error("Database transaction failed to execute update sequence");
         error.statusCode = 500;
@@ -110,23 +80,10 @@ export const changeAbout = async (username, about) =>{
 
     return result; // Returns object { about: "..." } back up to controller scope
 }
-export const updateSocialMediaList = async (username, socials) =>{
-    const user = await findUserByUsername(username);
-    if(!user){
-        const error = new Error(`User profile for '${username}' was not found`);
-        error.statusCode = 404;
-        throw error;
-    }
-
+export const updateSocialMediaList = async (user, socials) =>{
     return await updateSocialMediaById(user.id, socials);
 }
-export const findTwoFollowing = async (username, isFollow) =>{
-    const user = await findUserByUsername(username);
-    if(!user){
-        const error = new Error(`User profile for '${username}' was not found`);
-        error.statusCode = 404;
-        throw error;
-    }
+export const findTwoFollowing = async (user, isFollow) =>{
     if(isFollow) return []; // Explicitly return empty array payload instead of breaking flow
 
     const  response = await  latestTwoFollowing(user.id)
@@ -141,18 +98,11 @@ export const findTwoFollowing = async (username, isFollow) =>{
     return response;
 }
 
-export const getTwoFollowers = async (username) =>{
-    const user = await findUserByUsername(username);
-    if(!user){
-        const error = new Error(`User profile for '${username}' was not found`);
-        error.statusCode = 404;
-        throw error;
-    }
-
+export const getTwoFollowers = async (user) =>{
     const response = await latestTwoFollowers(user.id);
 
     if(!response || response.length <=0){
-        const error = new Error(`No one is followed.`);
+        const error = new Error("No followers found.");
         error.statusCode = 400;
         error.code = 'NO_OP';
         throw error;
@@ -160,26 +110,16 @@ export const getTwoFollowers = async (username) =>{
 
     return response;
 }
-export const getGalleryByUserId = async (username) => {
-    // 1. Resolve username to user record
-    const user = await findUserByUsername(username);
-    if (!user) {
-        const error = new Error(`User profile for '${username}' was not found`);
-        error.statusCode = 404;
-        throw error;
-    }
-
-    // 2. Fetch media records
+export const getGalleryByUserId = async (user) => {
+    // Fetch media records
     const rawPostsMedia = await getImagesByUserId(user.id);
 
-    // 3. Flatten array objects cleanly for client consumption
-    const flattenedImages = rawPostsMedia.flatMap(post => post.imageUrl || []);
+    // Flatten array objects cleanly for client consumption
+    const flattenedImages = (rawPostsMedia || []).flatMap(post => post.imageUrl || []);
 
     return {
         userId: user.id,
         images: flattenedImages
     };
 };
-
-
 

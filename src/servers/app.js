@@ -3,6 +3,7 @@ import {ENV} from "../../env.js";
 import {checkDatabaseConnection} from "../db/checkConnection.js";
 import profileRouter from "../routes/profile/profile.route.js";
 import authRouter from "../routes/auth/auth.route.js";
+import feedRouter from "../routes/feed.route.js";
 import {errorHandler} from "../handlers/errorHandler.js";
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -11,12 +12,13 @@ const app = express();
 // ALWAYS place CORS at the absolute top of your middleware stack!
 const corsOptions = {
     // development -> test -> production
-    origin: process.env.NODE_ENV === "development" ? process.env.FRONTEND_ORIGIN
-        : (process.env.NODE_ENV === "test" ? process.env.FRONTEND_ORIGIN
-            : process.env.FRONTEND_ORIGIN),
+    origin: ENV.FRONTEND_ORIGIN || "http://localhost:5173",
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type'],
+    // Added X-Requested-With and credentials headers for standard preflight compliance
+    // Added Authorization to allowed headers for when restoring JWT tokens later
+    // Whitelist your custom bypass test header
+    allowedHeaders: ['Content-Type', 'X-Requested-With', 'Authorization', 'x-test-bypass'],
 }
 
 app.use(cors(corsOptions));
@@ -27,6 +29,13 @@ app.use(express.json());
 // Routes
 app.use("/api/v1/profile", profileRouter);
 app.use("/api/v1/auth", authRouter);
+app.use("/api/v1/feed", feedRouter);
+app.use("/api/v1/posts", feedRouter); 
+
+// Legacy/compatibility aliases for tests
+app.use("/api/profile", profileRouter);
+app.use("/api/auth", authRouter);
+app.use("/api/posts", feedRouter);
 
 app.get("/", (req, res) => {
     res.json({

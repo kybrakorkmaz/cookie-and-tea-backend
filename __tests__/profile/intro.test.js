@@ -1,13 +1,13 @@
 import request from "supertest";
-import app from "../src/servers/app.js";
+import app from "../../src/servers/app.js";
 import {afterAll, beforeAll, describe, expect, it} from "@jest/globals";
-import {follows, posts, socials, users} from "../src/db/schema/index.js";
-import {db, sql} from "../src/db/client.js";
+import {follows, posts, socials, users} from "../../src/db/schema/index.js";
+import {db, sql} from "../../src/db/client.js";
 import {eq, or} from "drizzle-orm";
-import {ENV} from "../env.js";
+import {ENV} from "../../env.js";
 import jwt from "jsonwebtoken";
-import {purgeTestUsers, seedCompleteProfileContext} from "./utils/testDb.util.js";
-import {createAuthenticatedAgent} from "./utils/auth.util.js";
+import {purgeTestUsers, seedCompleteProfileContext} from "../utils/testDb.util.js";
+import {createAuthenticatedAgent} from "../utils/auth.util.js";
 
 describe("Profile Integration Suite with Live Test DB", ()=>{
     const uniqueId = Math.floor(Math.random() * 10000);

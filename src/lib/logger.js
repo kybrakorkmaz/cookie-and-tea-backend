@@ -1,68 +1,79 @@
 import winston from "winston";
-import {ENV} from "../../env.js";
+import { ENV } from "../../env.js";
 import fs from "node:fs";
 import path from "node:path";
 
-let info, format, isProduction;
-// winston log levels: silly -> debug -> verbose -> info -> warn -> error
-const {combine, timestamp, json, colorize, simple, printf} = winston.format;
-// Create and export a configured logger instance
+const { combine, timestamp, json, colorize, printf, errors } = winston.format;
 
-// 1. Determine the environment
+// 1. Setup Environment Flags
 const isProd = ENV.NODE_ENV === "production";
 const isTest = ENV.NODE_ENV === "test";
 
-// 2. Define a clean pretty print format for Development terminal viewing
-const devLogFormat = printf(({level, message, timestamp, ...metadata}) => {
-    const extraMeta = Object.keys(metadata).length ? JSON.stringify(metadata) : "";
-    return `${timestamp} [${level}]: ${message} ${extraMeta}`;
+// 2. Custom format for local development (clean and readable)
+const localFormat = printf(({ level, message, timestamp, stack, ...metadata }) => {
+    // Show the error stack trace if it exists, otherwise show the message
+    const logContent = stack || message;
+
+    // Format extra data (metadata) as a pretty JSON string if it's not empty
+    const hasMetadata = Object.keys(metadata).length > 0;
+    const metaString = hasMetadata ? `\n${JSON.stringify(metadata, null, 2)}` : "";
+
+    return `${timestamp} [${level}]: ${logContent}${metaString}`;
 });
 
-// 3. Set minimum severity level dynamically
-// Dev logs everything down to debug. Prod hides debug/verbose. Test stays completely silent
-let logLevel = "debug";
-if(isProd) logLevel="info";
-if(isTest) logLevel = "error"; // Keeps test runs completely clean unless it's a real failure
+// 3. Determine the minimum log level based on environment
+const getLogLevel = () => {
+    if (isTest) return "error"; // Only show errors during tests
+    if (isProd) return "info";  // Standard info logging for production
+    return "debug";             // Detailed logging for development
+};
 
+// 4. Create the Logger instance
 export const logger = winston.createLogger({
-    level: logLevel, // Set minimum log level (info, debug, etc)
-    // If we are in test mode, do not log anything to console, otherwise use dynamic formats
-    silent: isTest,
+    level: getLogLevel(),
+    silent: isTest, // Don't output anything to console during tests
+    defaultMeta: { service: "cookie-and-tea-api" },
+    format: combine(
+        errors({ stack: true }), // Capture stack traces for Error objects
+        timestamp({ format: "YYYY-MM-DD HH:mm:ss" })
+    ),
     transports: [
-        new winston.transports.Console({ // Log to console
+        // Always log to the console
+        new winston.transports.Console({
             format: isProd
-            ? combine(timestamp(), json())// Strict fast JSON structure for cloud aggregators (AWS, Datadog)
+                ? combine(json()) // Production: JSON format for log parsers
                 : combine(
-                    timestamp({format: "YYYY-MM-DD HH:mm:ss"}),
-                    colorize({all: true}),
-                    devLogFormat // Human-friendly format for local dev debug
+                    colorize({ all: true }), // Dev: Add colors for readability
+                    localFormat
                 )
         }),
     ],
 });
 
-// --- Production-only log to file
-// Instead of evaluating inside the array, we cleanly push file tracking configuration on production builds
+// 5. File Logging (Production Only)
+// We save logs to files so we can investigate issues later if the server crashes
 if (isProd) {
-    // if the log directory does not exist, first create it
-    const logDir = path.resolve("src/logs");
-    fs.mkdirSync(logDir, {recursive: true});
+    const logDir = path.resolve("logs");
 
-    // Capture general system information logs
-    logger.add(
-        new winston.transports.File({
-            filename: path.join(logDir, "combined.log"),
-            level: "info",
-            format: combine(timestamp(), json()),
-        })
-    );
+    // Ensure the logs directory exists
+    if (!fs.existsSync(logDir)) {
+        fs.mkdirSync(logDir, { recursive: true });
+    }
 
-    // Separate critical application crashes or servers catches
-    logger.add(
-        new winston.transports.File({
-            filename: path.join(logDir, "error.log"),
-            level: "error",
-            format: combine(timestamp(), json()),
-        })
-    );
+    // Save all logs (info and above) to combined.log
+    logger.add(new winston.transports.File({
+        filename: path.join(logDir, "combined.log"),
+        format: combine(json()),
+        maxsize: 5242880, // 5MB limit per file
+        maxFiles: 5,      // Keep up to 5 old log files
+    }));
+
+    // Save only error logs to error.log
+    logger.add(new winston.transports.File({
+        level: "error",
+        filename: path.join(logDir, "error.log"),
+        format: combine(json()),
+        maxsize: 5242880,
+        maxFiles: 5,
+    }));
 }

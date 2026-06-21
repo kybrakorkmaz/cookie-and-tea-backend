@@ -1,49 +1,37 @@
 import express from "express";
 import {
-    getTwoFollowing,
-    getUserAbout,
-    getUserEarnedMoney,
-    getUserGallery,
-    getUserIntro,
-    getUserPanel, setSocialMedia, setUserAbout
+    getUserPanel,
 } from "../../controllers/profile.controller.js";
 import {validate} from "../../middleware/validate.js";
 import {
-    getIntroQuerySchema,
-    getProfileParamsSchema, socialSchema, updateAboutSchema,
+    getProfileParamsSchema,
 } from "../../validations/profile.validation.js";
 import {authenticateToken} from "../../middleware/auth.js";
+import {resolveGlobalUsername} from "../../middleware/resolveUser.js";
+
+import profilePostsRouter from "./posts.route.js"
+import profileIntroRouter from "./intro.route.js";
+import profileGalleryRouter from "./gallery.route.js";
 
 const router = express.Router();
 
-//  Top-Level Guard
-// all router are under this line are guarded by authenticateToken (cookie session)
+// Parameter Resolver
+router.param("username", resolveGlobalUsername);
+
+// Session Shield
 router.use(authenticateToken);
-// Sub-Resources (First)
-router.get("/:username/intro", validate(getIntroQuerySchema), getUserIntro);
-router.get("/:username/earnings", getUserEarnedMoney); // Isolated target metric endpoint todo validation
-router.get("/:username/about", getUserAbout);
-router.get("/:username/follow", getTwoFollowing);
-// Intercepting mutations with clean schema guards
-router.put("/:username/about", validate(updateAboutSchema), setUserAbout);
-router.put("/:username/socials", validate(socialSchema), setSocialMedia);
 
+// Tab 1: Profile Intro (Main tab)
+router.use("/:username/intro", profileIntroRouter);
 
-// router.get("/:username/gallery", validate(getProfileParamsSchema), getUserGallery);
+// Tab 2: Profile Media Gallery
+router.use("/:username/gallery", profileGalleryRouter);
 
-/*
-// Stack them in order: Authed? -> Valid Data? -> Execute Controller
-router.put(
-    "/profile",
-    authenticateToken,          // 1. Checks who they are
-    validate(updateProfileSchema), // 2. Checks if their inputs are correct
-    updateProfileController     // 3. Runs the database action
-);
- */
-// Generic Catch-all Parameter (Last)
-// If the URL is just "/alice", it doesn't match sub-routes, so it drops down here safely.
+// Tab 3: User's own posts on the profile
+router.use("/:username/posts", profilePostsRouter);
+
+// Generic Catch-all Parameter (MUST BE LAST)
+// If the URL is just "/alice", it doesn't match the specific sub-routes or /posts, so it lands here safely.
 router.get("/:username", validate(getProfileParamsSchema), getUserPanel);
-// GET /api/v1/profile/kubra/gallery
-//router.get("/:username/gallery", validate(getProfileParamsSchema), getUserGallery);
 
 export default router;
