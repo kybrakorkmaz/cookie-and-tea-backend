@@ -12,7 +12,13 @@ describe("Posts Integration Suite", () => {
     let testUser;
     let authToken;
     beforeAll(async () => {
-        // await purgeTestUsers();
+        try {
+            await purgeTestUsers();
+        } catch (cleanupError) {
+            console.warn("Pre-test database purge warning:", cleanupError.message);
+        }
+
+        // Proceed with fresh seed context generation
         testUser = await seedTestUser({}, "active");
         authToken = jwt.sign(
             { userId: testUser.id, username: testUser.username },
@@ -37,7 +43,8 @@ describe("Posts Integration Suite", () => {
                 .get(`/api/v1/feed/${testUser.username}`)
                 .set("Cookie", [`token=${authToken}`]);
 
-            expect(response.status).toBe(204); // No post found
+            expect(response.status).toBe(200); // No post found
+            expect(response.body.data).toEqual([]);
         });
 
         it("should get feed timeline posts", async () => {

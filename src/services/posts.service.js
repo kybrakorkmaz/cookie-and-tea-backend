@@ -13,10 +13,8 @@ export const getPostById = async (postId) => {
 
 export const findAllPosts = async (userId) =>{
     const userPosts= await getUserAllPostsFromDB(userId);
-    if (!userPosts ||  userPosts.length <= 0) {
-        const error = new Error("No post found!");
-        error.statusCode = 204;
-        throw error;
+    if (!userPosts || userPosts.length <= 0) {
+        return [];
     }
     // Map database properties directly to frontend component layout values
     return userPosts;
@@ -42,7 +40,7 @@ export const updatePost = async (userId, postId, updatePayload) => {
 
 export const deletePost = async (userId, postId) => {
     const deleted = await deletePostById(userId, postId);
-    if (!deleted) {
+    if (!deleted || (Array.isArray(deleted) && deleted.length === 0)) {
         const error = new Error("Unauthorized request or post not found");
         error.statusCode = 403;
         throw error;

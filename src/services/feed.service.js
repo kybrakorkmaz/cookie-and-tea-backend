@@ -6,10 +6,8 @@ import {
 
 export const getFeedTimeline = async (userId) =>{
     const allUsersPosts = await getFeedTimelineFromDB(userId);
-    if (!allUsersPosts ||  allUsersPosts.length <= 0) {
-        const error = new Error("No post found!");
-        error.statusCode = 204;
-        throw error;
+    if (!allUsersPosts || allUsersPosts.length <= 0) {
+        return [];
     }
     return allUsersPosts;
 }

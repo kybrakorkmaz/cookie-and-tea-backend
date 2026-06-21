@@ -4,7 +4,11 @@ import {ENV} from "../../env.js";
 
 export const errorHandler = (err, req, res, next) => {
     // 1. Identify status code and message defaults
-    const statusCode = err.statusCode || 500;
+    const incomingStatus = parseInt(err.statusCode, 10);
+    const statusCode = (Number.isInteger(incomingStatus) && incomingStatus >= 100 && incomingStatus <= 599)
+        ? incomingStatus
+        : 500;
+
     const message = err.message || "Internal Server Error";
 
     // 2. Log the error using our logger

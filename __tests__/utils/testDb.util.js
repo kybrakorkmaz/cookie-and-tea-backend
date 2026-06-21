@@ -1,6 +1,6 @@
 // Cleanup function
 import {db} from "../../src/db/client.js";
-import {eq, inArray, like, or} from "drizzle-orm";
+import {and, eq, inArray, like, or} from "drizzle-orm";
 import {comments, donations, follows, posts, socials, users} from "../../src/db/schema/index.js";
 import bcrypt from "bcrypt";
 
@@ -104,6 +104,14 @@ export const generateTestPost = async (userOrId)=>{
     }).returning();
     return post;
 }
+
+
+export const deletePost = async (userId, postId) =>{
+    return db
+        .select()
+        .from(posts)
+        .where(and(eq(posts.userId, userId), eq(posts.id, postId)));
+}
 /**
  * Sweeps the test database clean of any mock entities matching the test namespace patterns.
  */
@@ -131,4 +139,5 @@ export const purgeTestUsers = async (namespacePrefix = "test\\_") => {
     // finally, safely delete the parent user records
     await db.delete(users).where(inArray(users.id, userIds));
 };
+
 

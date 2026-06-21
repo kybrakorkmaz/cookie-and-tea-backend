@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "@jest/globals";
 import { db, sql } from "../../src/db/client.js";
 import app from "../../src/servers/app.js";
 import request from "supertest";
-import {generateTestPost, purgeTestUsers, seedTestUser} from "../utils/testDb.util.js";
+import {deletePost, generateTestPost, purgeTestUsers, seedTestUser} from "../utils/testDb.util.js";
 import jwt from "jsonwebtoken";
 import { ENV } from "../../env.js";
 
@@ -10,7 +10,12 @@ describe("Profile Posts Integration Suite", () => {
     let testUser;
     let authToken;
     beforeAll(async () => {
-        // await purgeTestUsers();
+        try {
+            await purgeTestUsers();
+        } catch (cleanupError) {
+            console.warn("Pre-test profile database purge warning:", cleanupError.message);
+        }
+
         testUser = await seedTestUser({}, "active");
         authToken = jwt.sign(
             { userId: testUser.id, username: testUser.username },
@@ -34,7 +39,8 @@ describe("Profile Posts Integration Suite", () => {
             .get(`/api/v1/profile/${testUser.username}/posts`)
             .set("Cookie", [`token=${authToken}`]);
 
-        expect(response.status).toBe(204); // no content
+        expect(response.status).toBe(200); // no content
+        expect(response.body.data).toEqual([]);
     });
 
     it("should get user posts", async () => {
@@ -75,6 +81,12 @@ describe("Profile Posts Integration Suite", () => {
             .set("Cookie", [`token=${authToken}`]);
 
         expect(response.status).toBe(204);
+
+
+        const isDeleted = await deletePost(testUser.userId, initialPost.id);
+
+        // Assert that the returned array is completely empty, proving successful deletion
+        expect(isDeleted.length).toBe(0);
 
         const getResponse = await request(app)
             .get(`/api/v1/profile/${testUser.username}/posts/${initialPost.id}`)

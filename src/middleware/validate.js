@@ -5,11 +5,15 @@ export const validate = (schema) => {
     return async (req, res, next) => {
         try {
             // Validate the request (body, query, and params)
-            await schema.parseAsync({
+            const parsedData = await schema.parseAsync({
                 body: req.body,
                 query: req.query,
                 params: req.params,
             });
+            // Re-assign the normalized and sanitized states safely back to Express properties
+            req.body = parsedData.body || req.body;
+            req.query = parsedData.query || req.query;
+            req.params = parsedData.params || req.params;
 
             // If validation is successful, go to the next middleware/controller
             return next();
