@@ -1,6 +1,6 @@
 // Cleanup function
 import {db} from "../../src/db/client.js";
-import {and, eq, inArray, like, or} from "drizzle-orm";
+import {and, desc, eq, inArray, like, or} from "drizzle-orm";
 import {comments, donations, follows, posts, socials, users} from "../../src/db/schema/index.js";
 import bcrypt from "bcrypt";
 
@@ -105,7 +105,12 @@ export const generateTestPost = async (userOrId)=>{
     return post;
 }
 
-
+export const getPost = async (userId) =>{
+    return db.select()
+        .from(posts).where(eq(posts.userId, userId))
+            .orderBy(desc(posts.createdAt))
+            .limit(1);
+}
 export const deletePost = async (userId, postId) =>{
     return db
         .select()

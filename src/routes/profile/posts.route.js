@@ -5,6 +5,7 @@ import {
     profilePostsController
 } from "../../controllers/profile.controller.js";
 import {authenticateToken} from "../../middleware/auth.js";
+import commentRoute from "../comment.route.js";
 
 // mergeParams lets this router read /:username from the parent mount point
 const router = express.Router({ mergeParams: true });
@@ -14,5 +15,5 @@ router.get("/", profilePostsController);
 router.use(authenticateToken);
 router.put("/:id", profilePostEditController);
 router.delete("/:id", profilePostDeleteController);
-
+router.use("/:id/comment", commentRoute);
 export default router;

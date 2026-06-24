@@ -85,3 +85,18 @@ export const logoutController = async (req, res, next) => {
         next(e);
     }
 }
+
+export const getMeController = async (req, res, next) =>{
+    try{
+        return res.status(200).json({
+            status: "success",
+            user: {
+                id: req.user.id,
+                username: req.user.username,
+                email: req.user.email
+            }
+        })
+    }catch (e){
+        next(e);
+    }
+}

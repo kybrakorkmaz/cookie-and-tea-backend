@@ -15,7 +15,7 @@ describe("Profile Posts Integration Suite", () => {
         } catch (cleanupError) {
             console.warn("Pre-test profile database purge warning:", cleanupError.message);
         }
-
+        // todo make function
         testUser = await seedTestUser({}, "active");
         authToken = jwt.sign(
             { userId: testUser.id, username: testUser.username },
@@ -56,7 +56,7 @@ describe("Profile Posts Integration Suite", () => {
         expect(Array.isArray(response.body.data)).toBe(true);
         expect(response.body.data.length).toBeGreaterThan(0);
     });
-
+    //todo create user post
     it("should update user post", async () =>{
         const initialPost = await generateTestPost(testUser.id);
         const newPayload =  {
@@ -82,8 +82,7 @@ describe("Profile Posts Integration Suite", () => {
 
         expect(response.status).toBe(204);
 
-
-        const isDeleted = await deletePost(testUser.userId, initialPost.id);
+        const isDeleted = await deletePost(testUser.id, initialPost.id);
 
         // Assert that the returned array is completely empty, proving successful deletion
         expect(isDeleted.length).toBe(0);
