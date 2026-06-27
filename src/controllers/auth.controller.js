@@ -13,7 +13,7 @@ export const signUpController = async (req, res, next) => {
         } = req.body;
 
         // BYPASS CHECK: Detect the test bypass signature
-        const isTestEnv = ENV.NODE_ENV === "test" || ENV.NODE_ENV === "development";
+        const isTestEnv = ENV.NODE_ENV === "test";
         const hasBypassHeader = req.headers["x-test-bypass"] === ENV.BYPASS_SECRET;
         const shouldBypassVerification = isTestEnv && hasBypassHeader;
 

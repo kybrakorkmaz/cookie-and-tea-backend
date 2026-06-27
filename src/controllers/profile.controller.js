@@ -6,6 +6,7 @@ import {
     getUserAboutInfo, updateSocialMediaList, getGalleryByUserId
 } from "../services/profile.service.js";
 import {deletePost, findAllPosts, updatePost} from "../services/posts.service.js";
+import {uploadToCloudinary} from "../config/cloudinary.js";
 
 // Called ONCE when the profile page loads
 export const getUserPanel = async (req, res, next) => {
@@ -142,29 +143,78 @@ export const profilePostsController = async (req, res, next) => {
     }
 }
 
-export const profilePostEditController = async (req, res, next) =>{
-    try{
-        const user  = req.resolvedUser;
-        const {id}= req.params; // post id
-        const newData  = req.body;
+export const profilePostEditController = async (req, res, next) => {
+    try {
+        const user = req.resolvedUser;
+        const { id } = req.params;
 
-        // Requirement: User can only see own posts on posts section and can delete and update THEM
-        // We must check if the authenticated user is the one whose profile is being viewed
-        // OR simply trust the service layer if it checks userId vs postId.
-        // Actually, for profile tab, the user should be updating THEIR own post.
+        // 1. Destructure from req.body (populated by multer)
+        const { header, content, type, existingImages, existingVideos } = req.body;
+
+        // 2. PARSE THE STRINGS: This is the missing step
+        // When using FormData, arrays are sent as JSON strings: '["url1", "url2"]'
+        const parseMedia = (data) => {
+            if (!data) return [];
+            try {
+                // If it's already an array (multer sometimes does this), return it
+                if (Array.isArray(data)) return data;
+                // Otherwise, try to parse the stringified JSON
+                return JSON.parse(data);
+            } catch (e) {
+                // If parsing fails (e.g., just a single string), return as single-item array
+                return [data];
+            }
+        };
+        const finalImages = parseMedia(existingImages);
+        const finalVideos = parseMedia(existingVideos);
+
+        if (req.files?.images) {
+            for (const file of req.files.images) {
+                const url = await uploadToCloudinary(file.buffer, "image");
+                finalImages.push(url);
+            }
+        }
+
+        if (req.files?.videos) {
+            for (const file of req.files.videos) {
+                const url = await uploadToCloudinary(file.buffer, "video");
+                finalVideos.push(url);
+            }
+        }
+
+        // 3. SECURE AUTH CHECK
         if (req.user.id !== user.id) {
             const error = new Error("Unauthorized: You can only update your own posts.");
             error.statusCode = 403;
             throw error;
         }
 
-        const updatedPost = await updatePost(user.id, id, newData);
+        // Ensure type is text if no media exists
+        const resolvedType = (finalImages.length === 0 && finalVideos.length === 0)
+            ? "text"
+            : type;
+
+        // 4. Construct payload
+        // IMPORTANT: If you want to support uploading NEW files here as well,
+        // you must add the cloudinary loop here just like you did in updatePostController
+        const updatePayload = {
+            type: resolvedType,
+            header,
+            content,
+            images: finalImages,
+            videos: finalVideos
+        };
+
+        // 5. Update
+        const updatedPost = await updatePost(user.id, id, updatePayload);
 
         return res.status(200).json({
             status: "success",
             data: updatedPost
-        })
-    }catch (e){
+        });
+    } catch (e) {
+        // This will now catch the error if JSON.parse fails
+        // or if 'type' is missing/invalid
         next(e);
     }
 }

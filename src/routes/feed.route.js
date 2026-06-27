@@ -27,7 +27,7 @@ router.post(
     validateMediaCount, // 3. Validate File Counts/Size
     addNewPostController // 4. Save to DB
 );
-router.put("/:username/:id", validate(postSchema), updatePostController);
+router.put("/:username/:id", uploadMiddleware, validate(postSchema), updatePostController);
 router.delete("/:username/:id", deletePostController);
 
 export default router;

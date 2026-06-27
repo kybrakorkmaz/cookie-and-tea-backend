@@ -74,9 +74,10 @@ export const registerNewUser = async (name, username, email, password, bypassVer
             throw error;
         }
 
-        //  If bypassing, intercept here to dodge token generation & the Mailtrap transport call
+        // If bypassing, intercept here to dodge token generation & the Mailtrap transport call
         if (bypassVerification) {
-            console.log(`[TEST BYPASS]: Skipping Mailtrap dispatch for ${email}. Account created as "active".`);
+            // FIXED: Removed email PII from logs for better privacy/security
+            console.log(`[TEST BYPASS]: Skipping Mailtrap dispatch. Account created as "active".`);
             return {
                 message: "Registration successful. Account auto-verified via test channel.",
                 user: prepareUserResponse(newUser),

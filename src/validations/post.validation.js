@@ -1,3 +1,4 @@
+import {z} from "zod";
 export const postSchema = z.object({
     body: z.object({
         header: z.string().trim().min(1, "Post header cannot be empty!").max(200),

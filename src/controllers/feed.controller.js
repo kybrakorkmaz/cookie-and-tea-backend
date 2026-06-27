@@ -40,24 +40,25 @@ export const getPostController = async (req, res, next) => {
 
 export const addNewPostController = async (req, res, next) => {
     try {
-        const {header, content, type}= req.body;
-        const files = req.files; // Multer injects this
+        const { header, content, type } = req.body;
+        // Guard: Ensure req.files is an object before accessing properties
+        const files = req.files || {};
 
         const imageUrls = [];
         const videoUrls = [];
 
         // Process Images
-        if(files.images){
-            for(const file of files.images){
+        if (files.images) {
+            for (const file of files.images) {
                 const url = await uploadToCloudinary(file.buffer, "image");
                 imageUrls.push(url);
             }
         }
 
         // Process Videos
-        if(files.videos){
-            for(const file of files.videos){
-                const url = await  uploadToCloudinary(file.buffer, "video");
+        if (files.videos) {
+            for (const file of files.videos) {
+                const url = await uploadToCloudinary(file.buffer, "video");
                 videoUrls.push(url);
             }
         }
@@ -78,32 +79,44 @@ export const addNewPostController = async (req, res, next) => {
         next(e);
     }
 };
-// In feed.controller.js
+
 export const updatePostController = async (req, res, next) => {
-    const { id } = req.params;
-    const { header, content, existingImages, existingVideos } = req.body;
+    try {
+        const { id } = req.params;
+        const { header, content, type, existingImages, existingVideos } = req.body;
 
-    // 1. Start with existing URLs that the user kept
-    const finalImages = Array.isArray(existingImages) ? existingImages : [existingImages];
-    const finalVideos = Array.isArray(existingVideos) ? existingVideos : [existingVideos];
+        // 1. Initialize arrays securely: default to empty array instead of [undefined]
+        const finalImages = Array.isArray(existingImages) ? existingImages : (existingImages ? [existingImages] : []);
+        const finalVideos = Array.isArray(existingVideos) ? existingVideos : (existingVideos ? [existingVideos] : []);
 
-    // 2. Upload NEW binary files from req.files
-    if (req.files?.images) {
-        for (const file of req.files.images) {
-            const url = await uploadToCloudinary(file.buffer, "image");
-            finalImages.push(url);
+        // 2. Upload NEW binary files from req.files
+        if (req.files?.images) {
+            for (const file of req.files.images) {
+                const url = await uploadToCloudinary(file.buffer, "image");
+                finalImages.push(url);
+            }
         }
+
+        if (req.files?.videos) {
+            for (const file of req.files.videos) {
+                const url = await uploadToCloudinary(file.buffer, "video");
+                finalVideos.push(url);
+            }
+        }
+
+        // 3. Update the database
+        const updatedPost = await updatePost(req.user.id, id, {
+            type,
+            header,
+            content,
+            images: finalImages,
+            videos: finalVideos
+        });
+
+        res.status(200).json({ status: "success", data: updatedPost });
+    } catch (e) {
+        next(e); // Properly forward async errors to error middleware
     }
-
-    // 3. Update the database with the finalized array
-    const updatedPost = await updatePost(req.user.id, id, {
-        header,
-        content,
-        images: finalImages, // Concatenated array
-        videos: finalVideos
-    });
-
-    res.status(200).json({ status: "success", data: updatedPost });
 };
 
 
