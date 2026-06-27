@@ -7,6 +7,7 @@ import feedRouter from "../routes/feed.route.js";
 import {errorHandler} from "../handlers/errorHandler.js";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import {testInterceptorMiddleware} from "../middleware/testInterceptor.middleware.js";
 const app = express();
 
 // ALWAYS place CORS at the absolute top of your middleware stack!
@@ -21,22 +22,29 @@ const corsOptions = {
     allowedHeaders: ['Content-Type', 'X-Requested-With', 'Authorization', 'x-test-bypass'],
 }
 
+// 1. CORS & Parsers
 app.use(cors(corsOptions));
 app.use(cookieParser());
-// Middleware
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
-// Routes
+
+// 2. Global Middleware
+// REMOVED duplicate express.json() call
+app.use(testInterceptorMiddleware);
+
+// 3. Routes
 app.use("/api/v1/profile", profileRouter);
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/feed", feedRouter);
-app.use("/api/v1/posts", feedRouter); 
+app.use("/api/v1/posts", feedRouter);
 
-// Legacy/compatibility aliases for tests
+// Legacy aliases
 app.use("/api/profile", profileRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/posts", feedRouter);
 
+// Health & Root
 app.get("/", (req, res) => {
     res.json({
         message: "Cookie and Tea API",

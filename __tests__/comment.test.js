@@ -1,6 +1,5 @@
-import {afterAll, beforeAll, describe, expect} from "@jest/globals";
+import {afterAll, beforeAll, describe, expect, it} from "@jest/globals";
 import {generateTestPost, getPost, purgeTestUsers, seedTestUser} from "./utils/testDb.util.js";
-import cleanupError from "jsonwebtoken/lib/JsonWebTokenError.js";
 import jwt from "jsonwebtoken";
 import {ENV} from "../env.js";
 import {sql} from "../src/db/client.js";
@@ -14,7 +13,7 @@ describe("Post Comment Test Cases", () =>{
         try{
             await purgeTestUsers();
         }catch (e){
-            console.warn("Pre-test profile database purge warning:", cleanupError.message);
+            console.warn("Pre-test profile database purge warning:",  e.message);
         }
         testUser = await seedTestUser({}, "active");
         authToken = jwt.sign(

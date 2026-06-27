@@ -4,8 +4,9 @@ import {
     getFeedTimelineFromDB,
 } from "../repositories/feed.repository.js";
 
-export const getFeedTimeline = async (userId) =>{
-    const allUsersPosts = await getFeedTimelineFromDB(userId);
+export const getFeedTimeline = async (userId, limit, offset) =>{
+    const allUsersPosts = await getFeedTimelineFromDB(userId, limit, offset);
+
     if (!allUsersPosts || allUsersPosts.length <= 0) {
         return [];
     }

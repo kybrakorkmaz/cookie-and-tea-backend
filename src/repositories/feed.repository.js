@@ -2,13 +2,13 @@ import {db} from "../db/client.js";
 import {follows, posts, users} from "../db/schema/index.js";
 import {and, desc, eq, inArray, or} from "drizzle-orm";
 
-// Feed Page: Authorized user posts + posts of people that user follows
-export const getFeedTimelineFromDB = async (userId) =>{
+// Feed Page: Authorized user posts + posts of people that user follows with strict pagination controls
+export const getFeedTimelineFromDB = async (userId, limit = 5, offset = 0) => {
     // Find IDs of users that the current user follows
     const followedUserIds = db
-        .select({followingId: follows.followingId})
+        .select({ followingId: follows.followingId })
         .from(follows)
-        .where(eq(follows.followerId, userId)); // Fix: followerId
+        .where(eq(follows.followerId, userId));
 
     // Fetch posts with author metadata attached
     return db
@@ -34,8 +34,11 @@ export const getFeedTimelineFromDB = async (userId) =>{
                 eq(posts.userId, userId),
                 inArray(posts.userId, followedUserIds)
             )
-        ).orderBy(desc(posts.createdAt));
-}
+        )
+        .orderBy(desc(posts.createdAt))
+        .limit(limit)
+        .offset(offset);
+};
 
 
 export const createNewPost = async (postData) => {

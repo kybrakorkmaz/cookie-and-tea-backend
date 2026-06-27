@@ -35,7 +35,13 @@ const envSchema = z.object({
     // Optional but highly recommended: clean branding configurations
     FROM_NAME: z.string().default("Cookie & Tea App"),
     FROM_EMAIL: z.email().default("noreply@cookieandtea.com"),
-    BYPASS_SECRET: z.string().min(1, { message: "BYPASS_SECRET configuration token is required" })
+    BYPASS_SECRET: z.string().min(1, { message: "BYPASS_SECRET configuration token is required" }),
+
+    // Cloudinary
+    CLOUDINARY_CLOUD_NAME : z.string().min(1, {message: "CLOUD NAME required!"}),
+    CLOUDINARY_API_KEY: z.string().min(1, {message: "CLOUDINARY API KEY required!"}),
+    CLOUDINARY_API_SECRET: z.string().min(1, "CLOUDINARY API SECRET required!"),
+    CLOUDINARY_URL: z.string().min(1, "CLOUDINARY URL required!")
 });
 
 // Parse and export

@@ -4,6 +4,8 @@ import {resolveGlobalUsername, resolveUserById} from "../middleware/resolveUser.
 import { validate } from "../middleware/validate.js";
 import { postSchema } from "../validations/post.validation.js";
 import {addNewPostController, deletePostController, getFeedTimelineController, getPostController, updatePostController} from "../controllers/feed.controller.js";
+import {uploadMiddleware} from "../middleware/multer.middleware.js";
+import {validateMediaCount} from "../middleware/fileValidator.middleware.js";
 const router = express.Router();
 
 // Parameter Resolver
@@ -18,7 +20,13 @@ router.use(resolveUserById); // Injects req.resolvedUser (the viewer)
 
 // Timeline of posts from people the viewer follows
 router.get("/:username", getFeedTimelineController);
-router.post("/:username", validate(postSchema), addNewPostController);
+router.post(
+    "/:username",
+    uploadMiddleware, // 1. Parse multipart (populates req.body AND req.files)
+    validate(postSchema), // 2. Validate now that req.body exists
+    validateMediaCount, // 3. Validate File Counts/Size
+    addNewPostController // 4. Save to DB
+);
 router.put("/:username/:id", validate(postSchema), updatePostController);
 router.delete("/:username/:id", deletePostController);
 
