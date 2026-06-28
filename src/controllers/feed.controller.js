@@ -1,4 +1,5 @@
-import {addNewPost, getFeedTimeline} from "../services/feed.service.js";
+// feed controller
+import {addNewPost, findFeedPrevComments, getFeedTimeline} from "../services/feed.service.js";
 import {deletePost, getPostById, updatePost} from "../services/posts.service.js";
 import {uploadToCloudinary} from "../config/cloudinary.js";
 export const getFeedTimelineController = async (req, res, next) =>{
@@ -18,27 +19,9 @@ export const getFeedTimelineController = async (req, res, next) =>{
         next(e);
     }
 }
-export const getPostController = async (req, res, next) => {
-    try {
-        const { id } = req.params;
-        const posts = await getPostById(id);
 
-        if (!posts) {
-            const error = new Error("Post not found");
-            error.statusCode = 404;
-            throw error;
-        }
-
-        res.status(200).json({
-            status: "success",
-            data: posts
-        });
-    } catch (e) {
-        next(e);
-    }
-};
-
-export const addNewPostController = async (req, res, next) => {
+// USER ONLY CAN CREATE A NEW POST ON FEED PAGE
+export const createPostController = async (req, res, next) => {
     try {
         const { header, content, type } = req.body;
         // Guard: Ensure req.files is an object before accessing properties
@@ -80,54 +63,30 @@ export const addNewPostController = async (req, res, next) => {
     }
 };
 
-export const updatePostController = async (req, res, next) => {
-    try {
-        const { id } = req.params;
-        const { header, content, type, existingImages, existingVideos } = req.body;
 
-        // 1. Initialize arrays securely: default to empty array instead of [undefined]
-        const finalImages = Array.isArray(existingImages) ? existingImages : (existingImages ? [existingImages] : []);
-        const finalVideos = Array.isArray(existingVideos) ? existingVideos : (existingVideos ? [existingVideos] : []);
-
-        // 2. Upload NEW binary files from req.files
-        if (req.files?.images) {
-            for (const file of req.files.images) {
-                const url = await uploadToCloudinary(file.buffer, "image");
-                finalImages.push(url);
-            }
+export const previewCommentsController = async (req, res, next) =>{
+    try{
+        const user = req.resolvedUser;
+        const comments = await findFeedPrevComments = (user.id);
+        if(!comments){
+            return res.status(404).json({
+                status: "failure",
+                message: "No comments found!"
+            });
+        }else if(comments.length === 0){
+            return res.status(404).json({
+                status: "success",
+                message: "No comments found!"
+            });
         }
-
-        if (req.files?.videos) {
-            for (const file of req.files.videos) {
-                const url = await uploadToCloudinary(file.buffer, "video");
-                finalVideos.push(url);
-            }
-        }
-
-        // 3. Update the database
-        const updatedPost = await updatePost(req.user.id, id, {
-            type,
-            header,
-            content,
-            images: finalImages,
-            videos: finalVideos
-        });
-
-        res.status(200).json({ status: "success", data: updatedPost });
-    } catch (e) {
-        next(e); // Properly forward async errors to error middleware
-    }
-};
-
-
-export const deletePostController = async (req, res, next) => {
-    try {
-        const { id } = req.params;
-        await deletePost(req.user.id, id);
-        res.status(204).end();
-    } catch (e) {
+        return res.status(200).json({
+            status: "success",
+            data: comments
+        })
+    }catch (e){
         next(e);
     }
-};
+}
+
 
 

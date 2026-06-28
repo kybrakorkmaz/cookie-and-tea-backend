@@ -1,24 +1,4 @@
-import {getUserAllPostsFromDB} from "../repositories/post.repository.js";
-import {deletePostById, findPostById, updatePostById} from "../repositories/feed.repository.js";
-
-export const getPostById = async (postId) => {
-    const post = await findPostById(postId);
-    if (!post) {
-        const error = new Error("Post not found");
-        error.statusCode = 404;
-        throw error;
-    }
-    return post;
-};
-
-export const findAllPosts = async (userId) =>{
-    const userPosts= await getUserAllPostsFromDB(userId);
-    if (!userPosts || userPosts.length <= 0) {
-        return [];
-    }
-    // Map database properties directly to frontend component layout values
-    return userPosts;
-}
+import {deletePostById, updatePostById} from "../repositories/post.repository.js";
 
 export const updatePost = async (userId, postId, updatePayload) => {
     const formattedUpdate = {

@@ -1,3 +1,4 @@
+// profile service
 import {changeAboutByUsername} from "../repositories/auth.repository.js";
 import {
     findSocialsByUserId,
@@ -5,12 +6,10 @@ import {
     latestTwoFollowers,
     latestTwoFollowing,
     topSupportedTwoPosts, updateSocialMediaById,
-    getImagesByUserId,
+    getImagesByUserId, getProfilePosts, getAllProfilePostIds,
 } from "../repositories/profile.repository.js";
-import {
-    deletePostByIds,
-    updatePostByIds
-} from "../repositories/post.repository.js";
+
+import {fetchCommentsForIds} from "./comment.service.js";
 
 export const getPanelInfo = async (user) =>{
     // required header properties
@@ -121,5 +120,23 @@ export const getGalleryByUserId = async (user) => {
         userId: user.id,
         images: flattenedImages
     };
+};
+
+export const findProfilePosts = async (userId) =>{
+    const userPosts= await getProfilePosts(userId);
+    if (!userPosts || userPosts.length <= 0) {
+        return [];
+    }
+    // Map database properties directly to frontend component layout values
+    return userPosts;
+}
+
+export const findProfilePrevComments = async (userId) => {
+    // 1. Get IDs from your posts repository
+    const allPostIds = await getAllProfilePostIds(userId);
+    if (!allPostIds || allPostIds.length === 0) return [];
+
+    // 2. Fetch comments using the repo
+    return await fetchCommentsForIds(allPostIds);
 };
 

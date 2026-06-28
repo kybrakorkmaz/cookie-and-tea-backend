@@ -113,4 +113,36 @@ export const getImagesByUserId = async (userId) =>{
         );
 }
 
+// Profile page: Authorized user's posts
+export const getProfilePosts = async (userId) =>  {
+    return db
+        .select({
+            id: posts.id,
+            userId: posts.userId,
+            type: posts.type,
+            header: posts.header,
+            content: posts.content,
+            images: posts.images,
+            videos: posts.videos,
+            commentCount: posts.commentCount,
+            donationSum: posts.donationSum,
+            createdAt: posts.createdAt,
+            authorName: users.name,
+            authorUsername: users.username,
+            authorProfileImage: users.profileImage
+        })
+        .from(posts)
+        .innerJoin(users, eq(posts.userId, users.id))
+        .where(eq(posts.userId, userId))
+        .orderBy(desc(posts.createdAt));
+}
+
+
+
+export const getAllProfilePostIds = async (userId) =>{
+    return db.select({
+        postId:posts.id
+    }).from(posts)
+        .where(eq(posts.userId, userId))
+}
 
