@@ -6,11 +6,11 @@ import { postSchema } from "../validations/post.validation.js";
 import {
     createPostController,
     getFeedTimelineController,
-    previewCommentsController
 } from "../controllers/feed.controller.js";
 import {uploadMiddleware} from "../middleware/multer.middleware.js";
 import {validateMediaCount} from "../middleware/fileValidator.middleware.js";
 import postsRoute from "./posts.route.js";
+import {previewCommentsController} from "../controllers/comment.controller.js";
 const router = express.Router();
 
 // Parameter Resolver

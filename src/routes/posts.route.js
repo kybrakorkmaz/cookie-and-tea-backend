@@ -12,10 +12,31 @@ const router = express.Router({ mergeParams: true });
 router.use(authenticateToken);
 
 // Update a post
-router.put("/:id", uploadMiddleware, validate(postSchema), updatePostController);
+router.put(
+    "/:id",
+    uploadMiddleware,
+    // 1. Stash the media fields before validation strips them
+    (req, res, next) => {
+        req._preservedMedia = {
+            existingImages: req.body.existingImages,
+            existingVideos: req.body.existingVideos
+        };
+        next();
+    },
+    // 2. Validate the standard fields (header, content, type)
+    validate(postSchema),
+    // 3. Merge the stashed media fields back into req.body
+    (req, res, next) => {
+        Object.assign(req.body, req._preservedMedia);
+        next();
+    },
+    updatePostController
+);
+
 // Delete a post
 router.delete("/:id", deletePostController);
 
 // Mount comments logic under this post
 router.use("/:id/comment", commentRoute);
+
 export default router;

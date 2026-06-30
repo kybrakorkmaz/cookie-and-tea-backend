@@ -1,5 +1,7 @@
 // comment controller
 import {createCommentService} from "../services/comment.service.js";
+import {findProfilePrevComments} from "../services/profile.service.js";
+import {findFeedPrevComments} from "../services/feed.service.js";
 
 export const createCommentController = async (req, res, next) => {
     try {
@@ -21,15 +23,20 @@ export const createCommentController = async (req, res, next) => {
 
 export const previewCommentsController = async (req, res, next) => {
     try {
-        const userId = req.user.id;
+        const userId = req.resolvedUser.id; // The owner of the page/feed
         let comments;
 
-        // Determine context: are we on a profile or feed?
-        // You can check req.baseUrl or a query param
+        // Dispatch based on the route context
+        // If the URL starts with /profile, it's profile posts
+        // If the URL starts with /feed, it's feed posts
         if (req.baseUrl.includes('profile')) {
             comments = await findProfilePrevComments(userId);
         } else {
             comments = await findFeedPrevComments(userId);
+        }
+
+        if (!comments || comments.length === 0) {
+            return res.status(404).json({ status: "success", message: "No comments found!" });
         }
 
         return res.status(200).json({ status: "success", data: comments });

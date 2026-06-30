@@ -1,6 +1,6 @@
 // feed controller
-import {addNewPost, findFeedPrevComments, getFeedTimeline} from "../services/feed.service.js";
-import {deletePost, getPostById, updatePost} from "../services/posts.service.js";
+import {addNewPost, getFeedTimeline} from "../services/feed.service.js";
+
 import {uploadToCloudinary} from "../config/cloudinary.js";
 export const getFeedTimelineController = async (req, res, next) =>{
     try {
@@ -63,30 +63,6 @@ export const createPostController = async (req, res, next) => {
     }
 };
 
-
-export const previewCommentsController = async (req, res, next) =>{
-    try{
-        const user = req.resolvedUser;
-        const comments = await findFeedPrevComments = (user.id);
-        if(!comments){
-            return res.status(404).json({
-                status: "failure",
-                message: "No comments found!"
-            });
-        }else if(comments.length === 0){
-            return res.status(404).json({
-                status: "success",
-                message: "No comments found!"
-            });
-        }
-        return res.status(200).json({
-            status: "success",
-            data: comments
-        })
-    }catch (e){
-        next(e);
-    }
-}
 
 
 

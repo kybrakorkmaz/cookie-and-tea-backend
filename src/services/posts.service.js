@@ -1,4 +1,16 @@
-import {deletePostById, updatePostById} from "../repositories/post.repository.js";
+import {deletePostById, getPostById, updatePostById} from "../repositories/post.repository.js";
+
+export const findPost = async (postId) => {
+    const isExist = await getPostById(postId);
+
+    // Drizzle select statements always return an array
+    if (!isExist || isExist.length === 0) {
+        const error = new Error("Post does not exist!");
+        error.statusCode = 404;
+        throw error;
+    }
+    return isExist[0];
+};
 
 export const updatePost = async (userId, postId, updatePayload) => {
     const formattedUpdate = {
@@ -20,7 +32,9 @@ export const updatePost = async (userId, postId, updatePayload) => {
 
 export const deletePost = async (userId, postId) => {
     const deleted = await deletePostById(userId, postId);
-    if (!deleted || (Array.isArray(deleted) && deleted.length === 0)) {
+
+    // Simplified: deletePostById returns an object or null, never an array now
+    if (!deleted) {
         const error = new Error("Unauthorized request or post not found");
         error.statusCode = 403;
         throw error;

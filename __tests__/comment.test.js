@@ -17,7 +17,7 @@ describe("Post Comment Test Cases", () =>{
         }
         testUser = await seedTestUser({}, "active");
         authToken = jwt.sign(
-            {id: testUser.id, username: testUser.username},
+            {userId: testUser.id, username: testUser.username},
             ENV.JWT_SECRET,
             {expiresIn: "1d"}
         );
@@ -32,7 +32,7 @@ describe("Post Comment Test Cases", () =>{
             }
         }
     })
-    describe("GET /api/v1/profile/:username/postst/:id/comment/", () =>{
+    describe("GET /api/v1/profile/:username/posts/:id/comment/", () =>{
         it("should create a comment", async ()=>{
             await generateTestPost(testUser.id);
 

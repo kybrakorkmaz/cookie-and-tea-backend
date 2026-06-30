@@ -141,28 +141,3 @@ export const profilePostsController = async (req, res, next) => {
         next(e);
     }
 }
-
-export const previewCommentsController = async (req, res, next) =>{
-    try{
-        const user = req.resolvedUser;
-        const comments = await findProfilePrevComments(user.id);
-        if(!comments){
-            return res.status(404).json({
-                status: "failure",
-                message: "Comments not found!"
-            });
-        }else if(comments.length === 0){
-            return res.status(404).json({
-                status: "success",
-                message: "Comments not found!"
-            });
-        }
-
-        return res.status(200).json({
-            status: "success",
-            data: comments
-        })
-    }catch (e){
-        next(e);
-    }
-}
