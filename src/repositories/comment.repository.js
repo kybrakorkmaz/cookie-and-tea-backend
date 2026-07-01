@@ -75,24 +75,30 @@ export const createComment = async (userId, postId, comment) => {
     });
 };
 
-export const updateComment = async (commentId, comment) =>{
+// Destructure input parameter and enforce commenterId isolation
+export const updateComment = async ({ commentId, commenterId, comment }) =>{
     return db
         .update(comments)
         .set({
             comment: comment
         }).where(and(
-            eq(comments.id, commentId)
+            eq(comments.id, commentId),
+            eq(comments.commenterId, commenterId)
         )).returning();
 }
 
-export const deleteComment  = async (commentId) =>{
+// Destructure input parameter and filter the deletion context by commenterId
+export const deleteComment  = async ({ commentId, commenterId }) =>{
     return await db.transaction(async (tx) => {
-        // Delete the comment row
+        // Delete the comment row matching both primary key and owner identifier
         const deleted = await tx.delete(comments)
-            .where(eq(comments.id, commentId))
+            .where(and(
+                eq(comments.id, commentId),
+                eq(comments.commenterId, commenterId)
+            ))
             .returning();
 
-        // If nothing was deleted, return empty result
+        // If nothing was deleted (unauthorized or missing), early return safe empty array
         if (!deleted || deleted.length === 0) {
             return deleted;
         }

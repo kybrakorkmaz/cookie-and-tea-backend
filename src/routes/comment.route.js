@@ -23,7 +23,7 @@ router.put("/:id", validate(commentSchema), updateCommentController);
 
 // DELETE: /api/profile/:username/posts/:id/comments/:id
 // DELETE: /api/feed/:username/posts/:id/comments/:id
-router.delete("/:id", deleteCommentController);
+router.delete("/:id", validate(commentSchema.pick({ params: true })), deleteCommentController);
 
 
 export default router;

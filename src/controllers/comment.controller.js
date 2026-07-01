@@ -70,27 +70,30 @@ export const createCommentController = async (req, res, next) => {
 };
 
 export const updateCommentController = async (req, res, next) =>{
-   try{
-       // From authenticateToken middleware
-       const id = parseInt(req.params.id, 10); // From the updated route path
-       const { comment } = req.body;
+    try{
+        const id = parseInt(req.params.id, 10);
+        const userId = req.user.id; // 🎯 FIX: Capture authenticated user ID to check ownership
+        const { comment } = req.body;
 
-       // Pass all three identifiers to your service layer to guarantee integrity
-       const updatedComment = await updateCommentService(id, comment);
+        // Pass an object containing commenterId to the service layer
+        const updatedComment = await updateCommentService({ commentId: id, commenterId: userId, comment });
 
-       return res.status(200).json({
-           status: "success",
-           data: updatedComment
-       });
-   }catch (e){
-       next(e);
-   }
+        return res.status(200).json({
+            status: "success",
+            data: updatedComment
+        });
+    }catch (e){
+        next(e);
+    }
 }
 
 export const deleteCommentController = async (req, res, next) =>{
     try{
-        const id = parseInt(req.params.id, 10); // From the updated route path
-        await deleteCommentService(id);
+        const id = parseInt(req.params.id, 10);
+        const userId = req.user.id; // Capture authenticated user ID to check ownership
+
+        //Pass both parameters down to guarantee data isolation
+        await deleteCommentService({ commentId: id, commenterId: userId });
         return res.status(204).end();
 
     }catch (e){

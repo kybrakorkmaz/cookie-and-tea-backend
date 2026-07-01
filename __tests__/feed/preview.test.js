@@ -27,10 +27,8 @@ describe("Feed Preview Comments Integration", () =>{
     afterAll(async () =>{
         try{
             await purgeTestUsers();
-        } finally {
-            if (sql && typeof sql.end === "function") {
-                await sql.end();
-            }
+        } catch (e) {
+            console.warn("Post-test feed database purge warning:", e.message);
         }
     });
 
@@ -60,3 +58,4 @@ describe("Feed Preview Comments Integration", () =>{
         expect(response.body.data[0]).toHaveProperty("comment");
     });
 });
+

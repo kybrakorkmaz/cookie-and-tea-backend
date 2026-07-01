@@ -25,16 +25,20 @@ export const fetchAllCommentsForIds = async (postIds, page = 1, limit = 20) =>{
 
     return await findAllComments(ids, page, limit);
 }
-export const updateCommentService = async (commentId, comment) =>{
-   const result = await updateComment(commentId,  comment);
-   if(!result || result.length === 0){
-       throw new Error("Post couldn't updated");
-   }
-   return result[0];
+// Accept contextual ownership variables and attach a 404 code status
+export const updateCommentService = async ({ commentId, commenterId, comment }) =>{
+    const result = await updateComment({ commentId, commenterId, comment });
+    if(!result || result.length === 0){
+        const error = new Error("Comment not found");
+        error.statusCode = 404;
+        throw error;
+    }
+    return result[0];
 }
 
-export const deleteCommentService = async (commentId) =>{
-    const result = await deleteComment(commentId);
+// Restructure argument to transparently route ownership verification details
+export const deleteCommentService = async ({ commentId, commenterId }) =>{
+    const result = await deleteComment({ commentId, commenterId });
     if (!result || result.length === 0) {
         const error = new Error("Comment not found");
         error.statusCode = 404;

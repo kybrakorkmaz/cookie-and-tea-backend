@@ -147,4 +147,14 @@ describe("Posts Integration Suite", () => {
             expect(getResponse.status).toBe(404);
         });
     });
+
+    describe("GET /api/v1/feed/:username/preview", () =>{
+        it("should get all preview comments on feed page", async () => {
+
+        })
+    });
+
+    describe("GET /api/v1/feed/:username/comments", () =>{
+
+    })
 });

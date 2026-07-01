@@ -10,7 +10,7 @@ import {
 // Called ONCE when the profile page loads
 export const getUserPanel = async (req, res, next) => {
     try {
-        const user = req.resolvedUser; 
+        const user = req.resolvedUser;
         const panelData = await getPanelInfo(user);
         return res.status(200).json(panelData);
     } catch (e) {
@@ -125,11 +125,14 @@ export const getTwoFollowing = async (req, res, next) =>{
 export const getUserGallery = async (req, res, next) => {
     try {
         const user = req.resolvedUser;
-        // Support pagination query params: ?page=1&limit=20
+
+        // Parse pagination criteria safely from the incoming query string
         const page = req.query.page ? parseInt(req.query.page, 10) : 1;
         const limit = req.query.limit ? parseInt(req.query.limit, 10) : 20;
 
+        // Thread variables downstream so the service layer executes a paginated chunk
         const galleryData = await getGalleryByUserId(user, page, limit);
+
         return res.status(200).json({ status: "success", data: galleryData });
     } catch (e) {
         next(e);
@@ -138,9 +141,9 @@ export const getUserGallery = async (req, res, next) => {
 
 export const profilePostsController = async (req, res, next) => {
     try{
-       const user = req.resolvedUser;
-       const allPostData = await findProfilePosts(user.id);
-       return res.status(200).json({status: "success", data: allPostData});
+        const user = req.resolvedUser;
+        const allPostData = await findProfilePosts(user.id);
+        return res.status(200).json({status: "success", data: allPostData});
     }catch (e){
         next(e);
     }

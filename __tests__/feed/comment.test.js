@@ -60,18 +60,19 @@ describe("Feed Comment Test Cases", () =>{
             const postRows = await getPost(testUser.id);
             const targetPostId = postRows[0].id;
 
-            const comment = "Feed update comment!";
+            const initialComment = "Original placeholder feed comment!";
+            const updatedComment = "Feed update comment verified payload!";
 
-            const commentIdData = await generateTestComment(testUser.id, targetPostId, comment);
+            const commentIdData = await generateTestComment(testUser.id, targetPostId, initialComment);
             const commentId = commentIdData.commentId;
             const response = await request(app)
                 .put(`/api/v1/feed/${testUser.username}/posts/${targetPostId}/comment/${commentId}`)
                 .set("Cookie", [`token=${authToken}`])
-                .send({comment:comment});
+                .send({ comment: updatedComment });
 
             expect(response.status).toBe(200);
             expect(response.body.status).toBe("success");
-            expect(response.body.data.comment).toBe(comment);
+            expect(response.body.data.comment).toBe(updatedComment);
         });
     });
 

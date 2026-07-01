@@ -1,6 +1,6 @@
 import {db} from "../db/client.js";
 import {posts} from "../db/schema/index.js";
-import {and, eq, inArray} from "drizzle-orm";
+import {and, desc, eq, inArray} from "drizzle-orm";
 
 export const fetchImagesForUserPosts = async (userId) =>{
     return db.select({
@@ -13,5 +13,6 @@ export const fetchImagesForUserPosts = async (userId) =>{
                 eq(posts.userId, userId),
                 inArray(posts.type, ["image", "hybrid"])
             )
-        );
+        )
+        .orderBy(desc(posts.id));
 };

@@ -62,18 +62,20 @@ describe("Post Comment Test Cases", () =>{
             const postRows = await getPost(testUser.id);
             const targetPostId = postRows[0].id;
 
-            const comment = "This is a test comment!";
+            const initialComment = "This is the original test comment!";
+            const updatedComment = "This is a brand new updated comment value!";
 
-            const commentIdData = await generateTestComment(testUser.id, targetPostId, comment);
+            const commentIdData = await generateTestComment(testUser.id, targetPostId, initialComment);
             const commentId = commentIdData.commentId;
+
             const response = await request(app)
                 .put(`/api/v1/profile/${testUser.username}/posts/${targetPostId}/comment/${commentId}`)
                 .set("Cookie", [`token=${authToken}`])
-                .send({comment:comment});
+                .send({ comment: updatedComment });
 
             expect(response.status).toBe(200);
             expect(response.body.status).toBe("success");
-            expect(response.body.data.comment).toBe(comment);
+            expect(response.body.data.comment).toBe(updatedComment);
         });
         // TODO feed update comment
     });
