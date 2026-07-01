@@ -61,6 +61,21 @@ const prepareUserResponse = (user) => {
 //  Added optional bypassVerification parameter to isolate test runs
 export const registerNewUser = async (name, username, email, password, bypassVerification = false) => {
     try {
+        // Proactively ensure username/email uniqueness before attempting insert
+        const existingByEmail = await findUserByEmail(email);
+        if (existingByEmail) {
+            const error = new Error("Email address is already in use.");
+            error.statusCode = 400;
+            throw error;
+        }
+
+        const existingByUsername = await findUserByUsername(username);
+        if (existingByUsername) {
+            const error = new Error("Username is already taken.");
+            error.statusCode = 400;
+            throw error;
+        }
+
         const hashedPassword = await hashPassword(password);
 
         // Set initial status directly to active if the bypass is triggered
@@ -89,15 +104,13 @@ export const registerNewUser = async (name, username, email, password, bypassVer
         const token = await generateToken(payload);
         const verificationUrl = `${ENV.BASE_URL}/api/v1/auth/verify-email?token=${token}`;
 
+        // Fire-and-forget email; swallow errors to avoid async logging outside request lifecycle
         sendEmail({
             to: newUser.email,
             subject: "Welcome! Please verify your email",
             message: `Hi ${newUser.name}, verify your account here: ${verificationUrl}`,
             html: `<p>Hi ${newUser.name},</p><p>Please click <a href="${verificationUrl}">here</a> to verify your account.</p>`
-        }).catch(err => {
-            console.error("--- NODEMAILER CRASH DETAILS ---");
-            console.error(err);
-        });
+        }).catch(() => {});
 
         return {
             message: "Registration successful. Please verify your email.",
