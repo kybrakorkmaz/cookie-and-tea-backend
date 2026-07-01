@@ -11,19 +11,19 @@ export const createCommentService = async (userId, postId, comment) => {
 };
 
 // This is the common utility both Feed and Profile services call
-export const fetchPrevCommentsForIds = async (postIds) => {
+export const fetchPrevCommentsForIds = async (postIds, page = 1, limit = 20) => {
     if (!postIds || postIds.length === 0) return [];
     // Normalize IDs to an array of numbers
     const ids = postIds.map(p => typeof p === "object" ? p.postId : p);
 
-    return await findPrevComments(ids);
+    return await findPrevComments(ids, page, limit);
 };
 
-export const fetchAllCommentsForIds = async (postIds) =>{
+export const fetchAllCommentsForIds = async (postIds, page = 1, limit = 20) =>{
     if (!postIds || postIds.length === 0) return [];
     const ids = postIds.map(p => typeof p === "object" ? p.postId : p);
 
-    return await findAllComments(ids);
+    return await findAllComments(ids, page, limit);
 }
 export const updateCommentService = async (commentId, comment) =>{
    const result = await updateComment(commentId,  comment);

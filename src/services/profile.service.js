@@ -109,31 +109,16 @@ export const getTwoFollowers = async (user) =>{
 
     return response;
 }
-export const getGalleryByUserId = async (user, page = 1, limit = 20) => {
-    // Fetch posts which contain images
+export const getGalleryByUserId = async (user) => {
+    // Fetch media records
     const rawPostsMedia = await getImagesByUserId(user.id);
 
-    // Flatten into an array of { postId, imageUrl } while preserving post linkage
-    const flattened = (rawPostsMedia || []).flatMap(post => {
-        const images = post.imageUrl || [];
-        return images.map(url => ({ postId: post.id, imageUrl: url }));
-    });
-
-    // Pagination guards and defaults
-    const p = Number.isNaN(Number(page)) ? 1 : Math.max(1, parseInt(page, 10));
-    const l = Number.isNaN(Number(limit)) ? 20 : Math.max(1, Math.min(100, parseInt(limit, 10)));
-    const offset = (p - 1) * l;
-
-    const paged = flattened.slice(offset, offset + l);
+    // Flatten array objects cleanly for client consumption
+    const flattenedImages = (rawPostsMedia || []).flatMap(post => post.imageUrl || []);
 
     return {
         userId: user.id,
-        images: paged,
-        meta: {
-            total: flattened.length,
-            page: p,
-            limit: l
-        }
+        images: flattenedImages
     };
 };
 
@@ -146,18 +131,18 @@ export const findProfilePosts = async (userId) =>{
     return userPosts;
 }
 
-export const findProfilePrevComments = async (userId) => {
+export const findProfilePrevComments = async (userId, page = 1, limit = 20) => {
     // Get IDs from your posts repository
     const allPostIds = await getAllProfilePostIds(userId);
     if (!allPostIds || allPostIds.length === 0) return [];
 
     // Fetch comments using the repo
-    return await fetchPrevCommentsForIds(allPostIds);
+    return await fetchPrevCommentsForIds(allPostIds, page, limit);
 };
 
-export const findAllProfileComments = async (userId) =>{
+export const findAllProfileComments = async (userId, page = 1, limit = 20) =>{
     const allPostIds = await getAllProfilePostIds(userId);
     if (!allPostIds || allPostIds.length === 0) return [];
 
-    return await fetchAllCommentsForIds(allPostIds);
+    return await fetchAllCommentsForIds(allPostIds, page, limit);
 }

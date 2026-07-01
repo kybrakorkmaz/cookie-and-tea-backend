@@ -6,15 +6,17 @@ import {findAllFeedComments, findFeedPrevComments} from "../services/feed.servic
 export const allCommentsController = async (req, res, next) =>{
     try{
         const userId = req.resolvedUser.id; // The owner of the page/feed
+        const page = req.query.page ? parseInt(req.query.page, 10) : 1;
+        const limit = req.query.limit ? parseInt(req.query.limit, 10) : 20;
         let comments;
 
         // Dispatch based on the route context
         // If the URL starts with /profile, it's profile posts
         // If the URL starts with /feed, it's feed posts
         if(req.baseUrl.includes('profile')){
-            comments = await findAllProfileComments(userId);
+            comments = await findAllProfileComments(userId, page, limit);
         }else{
-            comments = await findAllFeedComments(userId);
+            comments = await findAllFeedComments(userId, page, limit);
         }
 
         if(!comments || comments.length === 0){
@@ -29,12 +31,14 @@ export const allCommentsController = async (req, res, next) =>{
 export const previewCommentsController = async (req, res, next) => {
     try {
         const userId = req.resolvedUser.id;
+        const page = req.query.page ? parseInt(req.query.page, 10) : 1;
+        const limit = req.query.limit ? parseInt(req.query.limit, 10) : 20;
         let comments;
 
         if (req.baseUrl.includes('profile')) {
-            comments = await findProfilePrevComments(userId);
+            comments = await findProfilePrevComments(userId, page, limit);
         } else {
-            comments = await findFeedPrevComments(userId);
+            comments = await findFeedPrevComments(userId, page, limit);
         }
 
         if (!comments || comments.length === 0) {

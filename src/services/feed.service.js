@@ -34,18 +34,18 @@ export const addNewPost = async (userId, newPostPayload) => {
 };
 
 
-export const findFeedPrevComments = async (userId) =>{
+export const findFeedPrevComments = async (userId, page = 1, limit = 20) =>{
     // 1. Get IDs from your posts repository
     const allPostIds = await getFeedPostIds(userId);
     if (!allPostIds || allPostIds.length === 0) return [];
 
     // 2. Fetch comments using the repo
-    return await fetchPrevCommentsForIds(allPostIds);
+    return await fetchPrevCommentsForIds(allPostIds, page, limit);
 }
 
-export const findAllFeedComments = async (userId) =>{
+export const findAllFeedComments = async (userId, page = 1, limit = 20) =>{
     const allPostIds = await getFeedPostIds(userId);
     if (!allPostIds || allPostIds.length === 0) return [];
 
-    return await fetchAllCommentsForIds(allPostIds);
+    return await fetchAllCommentsForIds(allPostIds, page, limit);
 }

@@ -2,7 +2,7 @@ import {db} from "../db/client.js";
 import {comments, posts, users} from "../db/schema/index.js";
 import {and, desc, eq, inArray, sql} from "drizzle-orm";
 
-export const findPrevComments = async (allPostIds) => {
+export const findPrevComments = async (allPostIds, page = 1, limit = 20) => {
 
     const rankedComments = db
         .select({
@@ -17,6 +17,10 @@ export const findPrevComments = async (allPostIds) => {
         .where(inArray(comments.postId, allPostIds))
         .as("ranked");
 
+    const p = Number.isNaN(Number(page)) ? 1 : Math.max(1, parseInt(page, 10));
+    const l = Number.isNaN(Number(limit)) ? 20 : Math.max(1, Math.min(100, parseInt(limit, 10)));
+    const offset = (p - 1) * l;
+
     return db
         .select({
             postId: rankedComments.postId,
@@ -30,10 +34,16 @@ export const findPrevComments = async (allPostIds) => {
         .innerJoin(users, eq(users.id, rankedComments.commenterId))
         .where(sql`${rankedComments.rn}
         <= 2`)
-        .orderBy(desc(rankedComments.createdAt));
+        .orderBy(desc(rankedComments.createdAt))
+        .limit(l)
+        .offset(offset);
 };
 
-export const findAllComments = async (postIds) =>{
+export const findAllComments = async (postIds, page = 1, limit = 20) =>{
+    const p = Number.isNaN(Number(page)) ? 1 : Math.max(1, parseInt(page, 10));
+    const l = Number.isNaN(Number(limit)) ? 20 : Math.max(1, Math.min(100, parseInt(limit, 10)));
+    const offset = (p - 1) * l;
+
     return db.select({
         commentId: comments.id,
         postId: comments.postId,
@@ -44,7 +54,9 @@ export const findAllComments = async (postIds) =>{
     }).from(comments)
         .innerJoin(users, eq(users.id, comments.commenterId))
         .where(inArray(comments.postId, postIds))
-        .orderBy(desc(comments.createdAt));
+        .orderBy(desc(comments.createdAt))
+        .limit(l)
+        .offset(offset);
 }
 
 export const createComment = async (userId, postId, comment) => {
