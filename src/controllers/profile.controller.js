@@ -125,7 +125,11 @@ export const getTwoFollowing = async (req, res, next) =>{
 export const getUserGallery = async (req, res, next) => {
     try {
         const user = req.resolvedUser;
-        const galleryData = await getGalleryByUserId(user);
+        // Support pagination query params: ?page=1&limit=20
+        const page = req.query.page ? parseInt(req.query.page, 10) : 1;
+        const limit = req.query.limit ? parseInt(req.query.limit, 10) : 20;
+
+        const galleryData = await getGalleryByUserId(user, page, limit);
         return res.status(200).json({ status: "success", data: galleryData });
     } catch (e) {
         next(e);

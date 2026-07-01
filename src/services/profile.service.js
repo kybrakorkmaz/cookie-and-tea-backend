@@ -109,16 +109,31 @@ export const getTwoFollowers = async (user) =>{
 
     return response;
 }
-export const getGalleryByUserId = async (user) => {
-    // Fetch media records
+export const getGalleryByUserId = async (user, page = 1, limit = 20) => {
+    // Fetch posts which contain images
     const rawPostsMedia = await getImagesByUserId(user.id);
 
-    // Flatten array objects cleanly for client consumption
-    const flattenedImages = (rawPostsMedia || []).flatMap(post => post.imageUrl || []);
+    // Flatten into an array of { postId, imageUrl } while preserving post linkage
+    const flattened = (rawPostsMedia || []).flatMap(post => {
+        const images = post.imageUrl || [];
+        return images.map(url => ({ postId: post.id, imageUrl: url }));
+    });
+
+    // Pagination guards and defaults
+    const p = Number.isNaN(Number(page)) ? 1 : Math.max(1, parseInt(page, 10));
+    const l = Number.isNaN(Number(limit)) ? 20 : Math.max(1, Math.min(100, parseInt(limit, 10)));
+    const offset = (p - 1) * l;
+
+    const paged = flattened.slice(offset, offset + l);
 
     return {
         userId: user.id,
-        images: flattenedImages
+        images: paged,
+        meta: {
+            total: flattened.length,
+            page: p,
+            limit: l
+        }
     };
 };
 
