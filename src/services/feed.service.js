@@ -3,7 +3,7 @@ import {
     createNewPost, getFeedPostIds,
     getFeedTimelineFromDB,
 } from "../repositories/feed.repository.js";
-import {fetchCommentsForIds} from "./comment.service.js";
+import {fetchAllCommentsForIds, fetchPrevCommentsForIds} from "./comment.service.js";
 
 export const getFeedTimeline = async (userId, limit, offset) =>{
     const allUsersPosts = await getFeedTimelineFromDB(userId, limit, offset);
@@ -40,5 +40,12 @@ export const findFeedPrevComments = async (userId) =>{
     if (!allPostIds || allPostIds.length === 0) return [];
 
     // 2. Fetch comments using the repo
-    return await fetchCommentsForIds(allPostIds);
+    return await fetchPrevCommentsForIds(allPostIds);
+}
+
+export const findAllFeedComments = async (userId) =>{
+    const allPostIds = await getFeedPostIds(userId);
+    if (!allPostIds || allPostIds.length === 0) return [];
+
+    return await fetchAllCommentsForIds(allPostIds);
 }

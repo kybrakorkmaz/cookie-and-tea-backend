@@ -9,7 +9,7 @@ import {
     getImagesByUserId, getProfilePosts, getAllProfilePostIds,
 } from "../repositories/profile.repository.js";
 
-import {fetchCommentsForIds} from "./comment.service.js";
+import {fetchAllCommentsForIds, fetchPrevCommentsForIds} from "./comment.service.js";
 
 export const getPanelInfo = async (user) =>{
     // required header properties
@@ -132,11 +132,17 @@ export const findProfilePosts = async (userId) =>{
 }
 
 export const findProfilePrevComments = async (userId) => {
-    // 1. Get IDs from your posts repository
+    // Get IDs from your posts repository
     const allPostIds = await getAllProfilePostIds(userId);
     if (!allPostIds || allPostIds.length === 0) return [];
 
-    // 2. Fetch comments using the repo
-    return await fetchCommentsForIds(allPostIds);
+    // Fetch comments using the repo
+    return await fetchPrevCommentsForIds(allPostIds);
 };
 
+export const findAllProfileComments = async (userId) =>{
+    const allPostIds = await getAllProfilePostIds(userId);
+    if (!allPostIds || allPostIds.length === 0) return [];
+
+    return await fetchAllCommentsForIds(allPostIds);
+}

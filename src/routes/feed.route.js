@@ -10,7 +10,7 @@ import {
 import {uploadMiddleware} from "../middleware/multer.middleware.js";
 import {validateMediaCount} from "../middleware/fileValidator.middleware.js";
 import postsRoute from "./posts.route.js";
-import {previewCommentsController} from "../controllers/comment.controller.js";
+import {allCommentsController, previewCommentsController} from "../controllers/comment.controller.js";
 const router = express.Router();
 
 // Parameter Resolver
@@ -35,5 +35,6 @@ router.post(
 );
 
 router.use("/:username/posts", postsRoute);
-router.use("/:username/preview", previewCommentsController);
+router.get("/:username/preview", previewCommentsController);
+router.get("/:username/comments", allCommentsController);
 export default router;

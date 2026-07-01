@@ -1,5 +1,10 @@
 import express from "express";
-import {createCommentController, previewCommentsController} from "../controllers/comment.controller.js";
+import {
+    allCommentsController,
+    createCommentController, deleteCommentController,
+    previewCommentsController,
+    updateCommentController
+} from "../controllers/comment.controller.js";
 import {validate} from "../middleware/validate.js";
 import {commentSchema} from "../validations/comment.validation.js";
 import {authenticateToken} from "../middleware/auth.js";
@@ -12,11 +17,13 @@ router.use(authenticateToken);
 // POST: /api/feed/:username/posts/:id/comments/
 router.post("/", validate(commentSchema), createCommentController);
 
-// GET: /api/profile/:username/posts/:id/comments/?page=1&limit=10
-// GET: /api/feed/:username/posts/:id/comments/?page=1&limit=10
-router.get("/", previewCommentsController);
+// UPDATE: /api/profile/:username/posts/:id/comments/:id
+// UPDATE: /api/feed/:username/posts/:id/comments/:id
+router.put("/:id", validate(commentSchema), updateCommentController);
 
-// 3. Paginated Load More: GET /.../:id/comment/?page=1&limit=10
-//router.get("/", getCommentsController);
+// DELETE: /api/profile/:username/posts/:id/comments/:id
+// DELETE: /api/feed/:username/posts/:id/comments/:id
+router.delete("/:id", deleteCommentController);
+
 
 export default router;

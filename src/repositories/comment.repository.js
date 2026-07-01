@@ -1,6 +1,51 @@
 import {db} from "../db/client.js";
 import {comments, posts, users} from "../db/schema/index.js";
-import {desc, eq, inArray, sql} from "drizzle-orm";
+import {and, desc, eq, inArray, sql} from "drizzle-orm";
+
+export const findPrevComments = async (allPostIds) => {
+
+    const rankedComments = db
+        .select({
+            id: comments.id,
+            postId: comments.postId,
+            comment: comments.comment,
+            commenterId: comments.commenterId,
+            createdAt: comments.createdAt,
+            rn: sql`row_number() over (partition by ${comments.postId} order by ${comments.createdAt} desc)`.as("rn")
+        })
+        .from(comments)
+        .where(inArray(comments.postId, allPostIds))
+        .as("ranked");
+
+    return db
+        .select({
+            postId: rankedComments.postId,
+            commentId: rankedComments.id,
+            comment: rankedComments.comment,
+            authorName: users.name,
+            authorUsername: users.username,
+            authorProfileImage: users.profileImage
+        })
+        .from(rankedComments)
+        .innerJoin(users, eq(users.id, rankedComments.commenterId))
+        .where(sql`${rankedComments.rn}
+        <= 2`)
+        .orderBy(desc(rankedComments.createdAt));
+};
+
+export const findAllComments = async (postIds) =>{
+    return db.select({
+        commentId: comments.id,
+        postId: comments.postId,
+        comment: comments.comment,
+        authorName: users.name,
+        authorUsername: users.username,
+        authorProfileImage: users.profileImage
+    }).from(comments)
+        .innerJoin(users, eq(users.id, comments.commenterId))
+        .where(inArray(comments.postId, postIds))
+        .orderBy(desc(comments.createdAt));
+}
 
 export const createComment = async (userId, postId, comment) => {
     return await db.transaction(async (tx) => {
@@ -18,36 +63,19 @@ export const createComment = async (userId, postId, comment) => {
     });
 };
 
-export const findPrevComments = async (allPostIds) => {
-    if (!allPostIds || allPostIds.length === 0) return [];
-
-    // Normalize IDs to an array of numbers
-    const ids = allPostIds.map(p => typeof p === "object" ? p.postId : p);
-
-    const rankedComments = db
-        .select({
-            id: comments.id,
-            postId: comments.postId,
-            comment: comments.comment,
-            commenterId: comments.commenterId,
-            createdAt: comments.createdAt,
-            rn: sql`row_number() over (partition by ${comments.postId} order by ${comments.createdAt} desc)`.as("rn")
-        })
-        .from(comments)
-        .where(inArray(comments.postId, ids))
-        .as("ranked");
-
+export const updateComment = async (commentId, comment) =>{
     return db
-        .select({
-            postId: rankedComments.postId,
-            comment: rankedComments.comment,
-            authorName: users.name,
-            authorUsername: users.username,
-            authorProfileImage: users.profileImage
-        })
-        .from(rankedComments)
-        .innerJoin(users, eq(users.id, rankedComments.commenterId))
-        .where(sql`${rankedComments.rn}
-        <= 2`)
-        .orderBy(desc(rankedComments.createdAt));
-};
+        .update(comments)
+        .set({
+            comment: comment
+        }).where(and(
+            eq(comments.id, commentId)
+        )).returning();
+}
+
+export const deleteComment  = async (commentId) =>{
+    return db
+        .delete(comments)
+        .where(eq(comments.id, commentId))
+        .returning();
+}

@@ -23,7 +23,7 @@ export const getFeedTimelineController = async (req, res, next) =>{
 // USER ONLY CAN CREATE A NEW POST ON FEED PAGE
 export const createPostController = async (req, res, next) => {
     try {
-        const { header, content, type } = req.body;
+        const { header, content } = req.body; //  Ignore untrusted type from request body
         // Guard: Ensure req.files is an object before accessing properties
         const files = req.files || {};
 
@@ -46,10 +46,20 @@ export const createPostController = async (req, res, next) => {
             }
         }
 
+        // Derive the post type programmatically from successfully resolved media links
+        let derivedType = "text";
+        if (imageUrls.length > 0 && videoUrls.length > 0) {
+            derivedType = "hybrid";
+        } else if (imageUrls.length > 0) {
+            derivedType = "image";
+        } else if (videoUrls.length > 0) {
+            derivedType = "video";
+        }
+
         const newPost = await addNewPost(req.user.id, {
             header,
             content,
-            type,
+            type: derivedType,
             images: imageUrls,
             videos: videoUrls
         });

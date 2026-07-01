@@ -113,9 +113,21 @@ export const getPost = async (userId) =>{
 }
 export const deletePost = async (userId, postId) =>{
     return db
-        .select()
-        .from(posts)
-        .where(and(eq(posts.userId, userId), eq(posts.id, postId)));
+        .delete(posts)
+        .where(and(eq(posts.userId, userId), eq(posts.id, postId)))
+        .returning();
+}
+
+export const generateTestComment = async (userId, postId, comment)=>{
+    const [newComment] = await db.insert(comments)
+        .values({
+            postId: postId,
+            commenterId: userId,
+            comment: comment
+        }).returning({
+            commentId: comments.id
+        })
+    return newComment;
 }
 /**
  * Sweeps the test database clean of any mock entities matching the test namespace patterns.
