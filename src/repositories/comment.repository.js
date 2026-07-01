@@ -86,8 +86,23 @@ export const updateComment = async (commentId, comment) =>{
 }
 
 export const deleteComment  = async (commentId) =>{
-    return db
-        .delete(comments)
-        .where(eq(comments.id, commentId))
-        .returning();
+    return await db.transaction(async (tx) => {
+        // Delete the comment row
+        const deleted = await tx.delete(comments)
+            .where(eq(comments.id, commentId))
+            .returning();
+
+        // If nothing was deleted, return empty result
+        if (!deleted || deleted.length === 0) {
+            return deleted;
+        }
+
+        // Decrement the comment count on the related post (guard against negative values)
+        const postId = deleted[0].postId;
+        await tx.update(posts)
+            .set({ commentCount: sql`GREATEST(${posts.commentCount} - 1, 0)` })
+            .where(eq(posts.id, postId));
+
+        return deleted;
+    });
 }

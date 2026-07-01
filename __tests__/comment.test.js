@@ -94,10 +94,13 @@ describe("Post Comment Test Cases", () =>{
 
             expect(response.status).toBe(204);
 
+            // Verify the post's commentCount was decremented
+            const postAfterDelete = await getPost(testUser.id);
+            expect(postAfterDelete[0].commentCount).toBe(0);
+
             const response1 = await  request(app)
                 .get(`/api/v1/profile/${testUser.username}/posts/${targetPostId}/comment/${commentId}`)
                 .set("Cookie", [`token=${authToken}`]);
-
 
             expect(response1.status).toBe(404);
 
