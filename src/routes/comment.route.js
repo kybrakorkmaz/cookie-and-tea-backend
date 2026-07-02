@@ -1,29 +1,36 @@
 import express from "express";
+import { validate } from "../middleware/validate.js";
+import { commentSchema } from "../validations/comment.validation.js";
 import {
     allCommentsController,
-    createCommentController, deleteCommentController,
-    previewCommentsController,
+    createCommentController,
+    deleteCommentController,
     updateCommentController
 } from "../controllers/comment.controller.js";
-import {validate} from "../middleware/validate.js";
-import {commentSchema} from "../validations/comment.validation.js";
-import {authenticateToken} from "../middleware/auth.js";
 
-const router = express.Router({mergeParams: true});
+const router = express.Router({ mergeParams: true });
 
-router.use(authenticateToken);
+// GET: /api/.../posts/:postId/comment
+router.get("/", validate(commentSchema.postId), allCommentsController);
 
-// POST: /api/profile/:username/posts/:id/comments/
-// POST: /api/feed/:username/posts/:id/comments/
-router.post("/", validate(commentSchema), createCommentController);
+// POST: /api/.../posts/:postId/comment
+router.post("/",
+    validate(commentSchema.postId),
+    validate(commentSchema.body),
+    createCommentController
+);
 
-// UPDATE: /api/profile/:username/posts/:id/comments/:id
-// UPDATE: /api/feed/:username/posts/:id/comments/:id
-router.put("/:id", validate(commentSchema), updateCommentController);
+// PUT: /api/.../posts/:postId/comment/:commentId
+router.put("/:commentId",
+    validate(commentSchema.commentId),
+    validate(commentSchema.body),
+    updateCommentController
+);
 
-// DELETE: /api/profile/:username/posts/:id/comments/:id
-// DELETE: /api/feed/:username/posts/:id/comments/:id
-router.delete("/:id", validate(commentSchema.pick({ params: true })), deleteCommentController);
-
+// DELETE: /api/.../posts/:postId/comment/:commentId
+router.delete("/:commentId",
+    validate(commentSchema.commentId),
+    deleteCommentController
+);
 
 export default router;

@@ -37,7 +37,7 @@ describe("Post Comment Test Cases", () =>{
             await generateTestPost(testUser.id);
 
             const postRows = await getPost(testUser.id);
-            const targetPostId = postRows[0].id;
+            const targetPostId = Number(postRows[0].id);
 
             const payload = {
                 comment: "Very beautiful work, good job!"
@@ -48,6 +48,7 @@ describe("Post Comment Test Cases", () =>{
                 .set("Cookie", [`token=${authToken}`])
                 .send(payload);
 
+            console.log(response.error);
             expect(response.status).toBe(201);
             expect(response.body.status).toBe("success");
             expect(response.body.data.comment).toBe(payload.comment);

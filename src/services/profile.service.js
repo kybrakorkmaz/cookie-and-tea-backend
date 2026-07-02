@@ -9,7 +9,7 @@ import {
     getImagesByUserId, getProfilePosts, getAllProfilePostIds,
 } from "../repositories/profile.repository.js";
 
-import {fetchAllCommentsForIds, fetchPrevCommentsForIds} from "./comment.service.js";
+import {fetchPrevCommentsForIds} from "./comment.service.js";
 
 export const getPanelInfo = async (user) =>{
     // required header properties
@@ -127,8 +127,23 @@ export const findProfilePosts = async (userId) =>{
     if (!userPosts || userPosts.length <= 0) {
         return [];
     }
-    // Map database properties directly to frontend component layout values
-    return userPosts;
+
+    // Fetch preview comments (up to 2 per post) and attach
+    const postIds = userPosts.map(p => p.id);
+    const rawComments = await fetchPrevCommentsForIds(postIds, 1, postIds.length * 2);
+
+    const commentsByPost = (rawComments || []).reduce((acc, c) => {
+        const pid = c.postId || c.post_id || c.postId;
+        if (!pid) return acc;
+        if (!acc[pid]) acc[pid] = [];
+        acc[pid].push(c);
+        return acc;
+    }, {});
+
+    return userPosts.map(post => ({
+        ...post,
+        previewComments: (commentsByPost[post.id] || []).slice(0,2)
+    }));
 }
 
 export const findProfilePrevComments = async (userId, page = 1, limit = 20) => {
@@ -139,10 +154,3 @@ export const findProfilePrevComments = async (userId, page = 1, limit = 20) => {
     // Fetch comments using the repo
     return await fetchPrevCommentsForIds(allPostIds, page, limit);
 };
-
-export const findAllProfileComments = async (userId, page = 1, limit = 20) =>{
-    const allPostIds = await getAllProfilePostIds(userId);
-    if (!allPostIds || allPostIds.length === 0) return [];
-
-    return await fetchAllCommentsForIds(allPostIds, page, limit);
-}

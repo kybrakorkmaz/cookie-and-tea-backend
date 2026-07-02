@@ -13,20 +13,23 @@ export const findPost = async (postId) => {
 };
 
 export const updatePost = async (userId, postId, updatePayload) => {
-    const formattedUpdate = {
-        type: updatePayload.type,
-        header: updatePayload.header,
-        content: updatePayload.content,
-        images: updatePayload.images,
-        videos: updatePayload.videos
-    };
+    // 1. First, check if the post exists
+    const existing = await getPostById(postId);
+    if (!existing || existing.length === 0) {
+        const error = new Error("Post not found");
+        error.statusCode = 404;
+        throw error;
+    }
 
-    const updated = await updatePostById(userId, postId, formattedUpdate);
-    if (!updated || updated.length === 0) {
-        const error = new Error("Unauthorized request or post not found");
+    // 2. Second, check if it belongs to the user
+    if (existing[0].userId !== userId) {
+        const error = new Error("Forbidden: You do not own this post");
         error.statusCode = 403;
         throw error;
     }
+
+    // 3. Perform the update
+    const updated = await updatePostById(userId, postId, updatePayload);
     return updated[0];
 };
 

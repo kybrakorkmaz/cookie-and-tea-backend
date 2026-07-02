@@ -32,12 +32,9 @@ router.use("/:username/gallery", profileGalleryRouter);
 router.get("/:username/posts", profilePostsController);
 
 
-//Moved above the postsRoute middleware to prevent shadowing.
-// Because the shared router is mounted on top line, GET /api/v1/profile/:username/posts/preview will
-// hit the shared GET /:id handler first and treat "preview" as a post id.
-// That makes previewCommentsController on bottom line unreachable.
+// Preview routes (both /:username/preview and /:username/posts/preview) — keep both for compatibility
+router.get("/:username/preview", previewCommentsController);
 router.get("/:username/posts/preview", previewCommentsController);
-router.get("/:username/comments", allCommentsController);
 
 // Handles nested modification actions (PUT /:id, DELETE /:id) via your postsRoute
 router.use("/:username/posts", postsRoute);

@@ -1,7 +1,6 @@
 import {
     createComment,
-    deleteComment,
-    findAllComments,
+    deleteComment, fetchAllComments,
     findPrevComments,
     updateComment
 } from "../repositories/comment.repository.js";
@@ -11,38 +10,41 @@ export const createCommentService = async (userId, postId, comment) => {
 };
 
 // This is the common utility both Feed and Profile services call
-export const fetchPrevCommentsForIds = async (postIds, page = 1, limit = 20) => {
+export const fetchPrevCommentsForIds = async (postIds) => {
     if (!postIds || postIds.length === 0) return [];
-    // Normalize IDs to an array of numbers
-    const ids = postIds.map(p => typeof p === "object" ? p.postId : p);
-
-    return await findPrevComments(ids, page, limit);
+    // Passes the array directly to the repository
+    return await findPrevComments(postIds);
 };
 
-export const fetchAllCommentsForIds = async (postIds, page = 1, limit = 20) =>{
-    if (!postIds || postIds.length === 0) return [];
-    const ids = postIds.map(p => typeof p === "object" ? p.postId : p);
-
-    return await findAllComments(ids, page, limit);
+export const findAllComments = async (postId, page = 1, limit = 20) =>{
+    if (!postId) {
+        const error = new Error("Bad request!, Empty Post Id");
+        error.statusCode = 400;
+        throw error;
+    }
+    return await fetchAllComments(postId, page, limit);
 }
-// Accept contextual ownership variables and attach a 404 code status
-export const updateCommentService = async ({ commentId, commenterId, comment }) =>{
+
+export const updateCommentService = async ({ commentId, commenterId, comment }) => {
+    // Repository handles ownership: WHERE id = commentId AND userId = commenterId
     const result = await updateComment({ commentId, commenterId, comment });
-    if(!result || result.length === 0){
-        const error = new Error("Comment not found");
+
+    if (!result || result.length === 0) {
+        // Here we differentiate between 404 (Doesn't exist) and 403 (Not yours)
+        // For security, APIs often return 404 for both to avoid enumerating resources
+        const error = new Error("Comment not found or access denied");
         error.statusCode = 404;
         throw error;
     }
     return result[0];
-}
+};
 
-// Restructure argument to transparently route ownership verification details
-export const deleteCommentService = async ({ commentId, commenterId }) =>{
+export const deleteCommentService = async ({ commentId, commenterId }) => {
     const result = await deleteComment({ commentId, commenterId });
     if (!result || result.length === 0) {
-        const error = new Error("Comment not found");
+        const error = new Error("Comment not found or access denied");
         error.statusCode = 404;
         throw error;
     }
     return result;
-}
+};

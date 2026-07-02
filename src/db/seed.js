@@ -1,4 +1,5 @@
 import { db, sql } from "./client.js";
+import { eq } from "drizzle-orm";
 import { users, posts, comments, donations, follows, socials } from "./schema/index.js";
 import { faker } from "@faker-js/faker";
 import { ENV } from "../../env.js";
@@ -132,7 +133,7 @@ async function seed() {
                 if (count > 0) {
                     await db.update(posts)
                         .set({ commentCount: count })
-                        .where(sql`${posts.id} = ${post.id}`);
+                        .where(eq(posts.id, post.id));
                 }
             }
         }
@@ -165,7 +166,7 @@ async function seed() {
                 if (sum > 0) {
                     await db.update(posts)
                         .set({ donationSum: sum })
-                        .where(sql`${posts.id} = ${post.id}`);
+                        .where(eq(posts.id, post.id));
                 }
             }
         }

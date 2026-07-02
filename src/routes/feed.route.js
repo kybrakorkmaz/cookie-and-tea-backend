@@ -10,7 +10,7 @@ import {
 import {uploadMiddleware} from "../middleware/multer.middleware.js";
 import {validateMediaCount} from "../middleware/fileValidator.middleware.js";
 import postsRoute from "./posts.route.js";
-import {allCommentsController, previewCommentsController} from "../controllers/comment.controller.js";
+import { previewCommentsController } from "../controllers/comment.controller.js";
 const router = express.Router();
 
 // Parameter Resolver
@@ -23,8 +23,7 @@ router.param("username", resolveGlobalUsername);
 router.use(authenticateToken);
 router.use(resolveUserById); // Injects req.resolvedUser (the viewer)
 
-// Timeline of posts from people the viewer follows
-router.get("/:username", getFeedTimelineController);
+
 // USER ONLY CREATE A NEW POST ON FEED PAGE
 router.post(
     "/:username",
@@ -34,7 +33,10 @@ router.post(
     createPostController // 4. Save to DB
 );
 
-router.use("/:username/posts", postsRoute);
+// 1. Static/Specific routes FIRST: place preview before posts middleware to avoid shadowing
 router.get("/:username/preview", previewCommentsController);
-router.get("/:username/comments", allCommentsController);
+router.use("/:username/posts", postsRoute);
+
+// Timeline of posts from people the viewer follows
+router.get("/:username", getFeedTimelineController);
 export default router;

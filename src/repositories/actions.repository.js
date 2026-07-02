@@ -2,34 +2,7 @@ import {db, sql as sqlClient} from "../db/client.js";
 import {actions, users} from "../db/schema/index.js";
 import {and, desc, eq, sql} from "drizzle-orm";
 
-let _ensured = false;
-const ensureActionsTable = async () =>{
-    if(_ensured) return;
-    _ensured = true;
-    // Create enum types and table if they don't exist to keep tests self-contained
-    const createTypeAction = `DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'action_type') THEN CREATE TYPE action_type AS ENUM ('comment','follow','donation'); END IF; END$$;`;
-    const createTypeStatus = `DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'action_status') THEN CREATE TYPE action_status AS ENUM ('unread','read'); END IF; END$$;`;
-
-    const createTable = `CREATE TABLE IF NOT EXISTS actions (
-        id serial PRIMARY KEY,
-        actor_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        target_user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        type action_type NOT NULL,
-        post_id integer REFERENCES posts(id) ON DELETE SET NULL,
-        amount integer,
-        message text,
-        status action_status NOT NULL DEFAULT 'unread',
-        read_at timestamp,
-        created_at timestamp DEFAULT now() NOT NULL
-    );`;
-
-    await sqlClient.unsafe(createTypeAction);
-    await sqlClient.unsafe(createTypeStatus);
-    await sqlClient.unsafe(createTable);
-}
-
 export const createAction = async ({actorId, targetUserId, type, postId = null, amount = null, message = null, status = 'unread', readAt = null}) => {
-    await ensureActionsTable();
     return db.insert(actions).values({
         actorId,
         targetUserId,
@@ -43,8 +16,12 @@ export const createAction = async ({actorId, targetUserId, type, postId = null, 
 }
 
 export const fetchActionsForUser = async (userId, page = 1, limit = 20) =>{
-    const p = Number.isNaN(Number(page)) ? 1 : Math.max(1, parseInt(page, 10));
-    const l = Number.isNaN(Number(limit)) ? 20 : Math.max(1, Math.min(100, parseInt(limit, 10)));
+    // Parse values first, then run finite checks to eliminate empty string cascading bugs
+    const parsedPage = parseInt(page, 10);
+    const parsedLimit = parseInt(limit, 10);
+
+    const p = Number.isFinite(parsedPage) ? Math.max(1, parsedPage) : 1;
+    const l = Number.isFinite(parsedLimit) ? Math.max(1, Math.min(100, parsedLimit)) : 20;
     const offset = (p - 1) * l;
 
     return db.select({
@@ -76,7 +53,6 @@ export const markActionRead = async (actionId, userId) =>{
 }
 
 export const deleteExpiredReadActions = async () =>{
-    // Delete actions that are read and older than 14 days from readAt
     return db.delete(actions)
         .where(sql`${actions.status} = 'read' AND ${actions.readAt} < (now() - interval '14 days')`)
         .returning();

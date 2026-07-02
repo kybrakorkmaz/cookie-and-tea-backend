@@ -2,7 +2,16 @@ import {db} from "../db/client.js";
 import {comments, posts, users} from "../db/schema/index.js";
 import {and, desc, eq, inArray, sql} from "drizzle-orm";
 
-export const findPrevComments = async (allPostIds, page = 1, limit = 20) => {
+export const findPrevComments = async (postIds) => {
+    // Normalize incoming identifiers to an array of primitive numbers
+    const ids = Array.isArray(postIds)
+        ? postIds
+            .map(p => (typeof p === 'object' && p !== null ? p.postId ?? p.post_id ?? p.id : p))
+            .map(Number)
+            .filter(n => !Number.isNaN(n))
+        : [];
+
+    if (!ids || ids.length === 0) return [];
 
     const rankedComments = db
         .select({
@@ -14,12 +23,8 @@ export const findPrevComments = async (allPostIds, page = 1, limit = 20) => {
             rn: sql`row_number() over (partition by ${comments.postId} order by ${comments.createdAt} desc)`.as("rn")
         })
         .from(comments)
-        .where(inArray(comments.postId, allPostIds))
+        .where(inArray(comments.postId, ids))
         .as("ranked");
-
-    const p = Number.isNaN(Number(page)) ? 1 : Math.max(1, parseInt(page, 10));
-    const l = Number.isNaN(Number(limit)) ? 20 : Math.max(1, Math.min(100, parseInt(limit, 10)));
-    const offset = (p - 1) * l;
 
     return db
         .select({
@@ -32,14 +37,12 @@ export const findPrevComments = async (allPostIds, page = 1, limit = 20) => {
         })
         .from(rankedComments)
         .innerJoin(users, eq(users.id, rankedComments.commenterId))
-        .where(sql`${rankedComments.rn}
-        <= 2`)
-        .orderBy(desc(rankedComments.createdAt))
-        .limit(l)
-        .offset(offset);
+        .innerJoin(posts, eq(posts.id, rankedComments.postId))
+        .where(sql`${rankedComments.rn} <= 2`)
+        .orderBy(desc(posts.createdAt));
 };
 
-export const findAllComments = async (postIds, page = 1, limit = 20) =>{
+export const fetchAllComments = async (postId, page = 1, limit = 20) =>{
     const p = Number.isNaN(Number(page)) ? 1 : Math.max(1, parseInt(page, 10));
     const l = Number.isNaN(Number(limit)) ? 20 : Math.max(1, Math.min(100, parseInt(limit, 10)));
     const offset = (p - 1) * l;
@@ -53,11 +56,13 @@ export const findAllComments = async (postIds, page = 1, limit = 20) =>{
         authorProfileImage: users.profileImage
     }).from(comments)
         .innerJoin(users, eq(users.id, comments.commenterId))
-        .where(inArray(comments.postId, postIds))
+        .where(eq(comments.postId, postId))
         .orderBy(desc(comments.createdAt))
         .limit(l)
         .offset(offset);
 }
+
+
 
 export const createComment = async (userId, postId, comment) => {
     return await db.transaction(async (tx) => {

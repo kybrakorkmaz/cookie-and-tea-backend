@@ -14,7 +14,6 @@ router.get("/", getActionsController);
 // PUT: /api/v1/actions/:id/read
 router.put("/:id/read", markActionReadController);
 
-// POST or GET to trigger purge (for admin/testing)
 router.post("/purge-expired", purgeExpiredReadsController);
 
 export default router;
