@@ -1,9 +1,12 @@
 import express from "express";
 import {checkDatabaseConnection} from "../db/checkConnection.js";
+
 import profileRouter from "../routes/profile/profile.route.js";
 import authRouter from "../routes/auth/auth.route.js";
 import feedRouter from "../routes/feed.route.js";
+import donateRouter from "../routes/donation.route.js";
 import actionsRouter from "../routes/actions.route.js";
+
 import {errorHandler} from "../handlers/errorHandler.js";
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -46,11 +49,7 @@ app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/feed", feedRouter);
 app.use("/api/v1/posts", feedRouter);
 app.use("/api/v1/actions", actionsRouter);
-
-// Legacy aliases
-app.use("/api/profile", profileRouter);
-app.use("/api/auth", authRouter);
-app.use("/api/posts", feedRouter);
+app.use("/api/v1/donate", donateRouter);
 
 // Health & Root
 app.get("/", (req, res) => {

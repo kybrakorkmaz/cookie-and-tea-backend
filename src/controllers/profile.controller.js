@@ -4,7 +4,9 @@ import {
     earnedMoney,
     getIntroDashboard,
     getPanelInfo, findTwoFollowing,
-    getUserAboutInfo, updateSocialMediaList, getGalleryByUserId, findProfilePosts, findProfilePrevComments
+    getUserAboutInfo, updateSocialMediaList, getGalleryByUserId, findProfilePosts, findProfilePrevComments,
+    followUser,
+    unfollowUser,
 } from "../services/profile.service.js";
 
 // Called ONCE when the profile page loads
@@ -121,6 +123,39 @@ export const getTwoFollowing = async (req, res, next) =>{
         next(e);
     }
 }
+
+export const followUserController = async (req, res, next) => {
+    try {
+        const targetUser = req.resolvedUser;
+        const follower = { id: req.user.id };
+
+        const result = await followUser(follower, targetUser);
+
+        return res.status(201).json({
+            status: "success",
+            data: result,
+        });
+    } catch (e) {
+        next(e);
+    }
+};
+
+export const unfollowUserController = async (req, res, next) => {
+    try {
+        const targetUser = req.resolvedUser;
+        const follower = { id: req.user.id };
+
+        const result = await unfollowUser(follower, targetUser);
+
+        return res.status(200).json({
+            status: "success",
+            data: result,
+        });
+    } catch (e) {
+        next(e);
+    }
+};
+
 // Called when viewing the Gallery tab
 export const getUserGallery = async (req, res, next) => {
     try {

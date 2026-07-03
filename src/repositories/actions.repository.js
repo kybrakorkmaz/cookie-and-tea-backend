@@ -1,6 +1,6 @@
 import {db, sql as sqlClient} from "../db/client.js";
 import {actions, users} from "../db/schema/index.js";
-import {and, desc, eq, sql} from "drizzle-orm";
+import {and, desc, eq, or, sql, inArray} from "drizzle-orm";
 
 export const createAction = async ({actorId, targetUserId, type, postId = null, amount = null, message = null, status = 'unread', readAt = null}) => {
     return db.insert(actions).values({
@@ -29,6 +29,7 @@ export const fetchActionsForUser = async (userId, page = 1, limit = 20) =>{
         actorId: actions.actorId,
         actorName: users.name,
         actorUsername: users.username,
+        actorProfileImage: users.profileImage,
         type: actions.type,
         postId: actions.postId,
         amount: actions.amount,
@@ -42,6 +43,46 @@ export const fetchActionsForUser = async (userId, page = 1, limit = 20) =>{
         .orderBy(desc(actions.createdAt))
         .limit(l)
         .offset(offset);
+}
+
+export const fetchActionsSentByUser = async (userId, page = 1, limit = 20) => {
+    const parsedPage = parseInt(page, 10);
+    const parsedLimit = parseInt(limit, 10);
+
+    const p = Number.isFinite(parsedPage) ? Math.max(1, parsedPage) : 1;
+    const l = Number.isFinite(parsedLimit) ? Math.max(1, Math.min(100, parsedLimit)) : 20;
+    const offset = (p - 1) * l;
+
+    return db.select({
+        id: actions.id,
+        actorId: actions.actorId,
+        actorName: users.name,
+        actorUsername: users.username,
+        actorProfileImage: users.profileImage,
+        type: actions.type,
+        postId: actions.postId,
+        amount: actions.amount,
+        message: actions.message,
+        status: actions.status,
+        readAt: actions.readAt,
+        createdAt: actions.createdAt,
+        targetUserId: actions.targetUserId,
+    }).from(actions)
+        .innerJoin(users, eq(users.id, actions.actorId))
+        .where(eq(actions.actorId, userId))
+        .orderBy(desc(actions.createdAt))
+        .limit(l)
+        .offset(offset);
+}
+
+export const deleteActionsForUsers = async (userIds) => {
+    if (!userIds.length) return [];
+    return db.delete(actions)
+        .where(or(
+            inArray(actions.actorId, userIds),
+            inArray(actions.targetUserId, userIds)
+        ))
+        .returning();
 }
 
 export const markActionRead = async (actionId, userId) =>{

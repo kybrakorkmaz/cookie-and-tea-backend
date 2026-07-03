@@ -33,6 +33,9 @@ export const users = pgTable("users", {
     followerCount: integer("follower_count").default(0).notNull(),
     followingCount: integer("following_count").default(0).notNull(),
 
+    // Stripe Connect account ID (null if not connected)
+    stripeConnectId: varchar("stripe_connect_id", { length: 255 }),
+
     ...timestamps(),
 });
 

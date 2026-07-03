@@ -64,6 +64,13 @@ export const fetchAllComments = async (postId, page = 1, limit = 20) =>{
 
 
 
+export const getPostOwnerId = async (postId) => {
+    const [post] = await db.select({ userId: posts.userId })
+        .from(posts)
+        .where(eq(posts.id, postId));
+    return post?.userId ?? null;
+};
+
 export const createComment = async (userId, postId, comment) => {
     return await db.transaction(async (tx) => {
         // 1. Insert the comment

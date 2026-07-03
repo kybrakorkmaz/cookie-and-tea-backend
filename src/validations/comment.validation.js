@@ -15,8 +15,9 @@ export const commentSchema = {
             commentId: idValidator
         })
     }),
-    // Used for request bodies
     body: z.object({
-        comment: z.string().trim().min(1, "Empty Comment!").max(500, "Too long!")
+        body: z.object({
+            comment: z.string().trim().min(1, "Empty Comment!").max(500, "Too long!")
+        })
     })
 };

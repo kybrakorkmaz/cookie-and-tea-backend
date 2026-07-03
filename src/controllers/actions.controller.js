@@ -10,8 +10,9 @@ export const getActionsController = async (req, res, next) =>{
             return res.status(400).json({ status: "fail", message: "Invalid pagination parameters" });
         }
 
-        const actions = await getActionsForUser(user.id, page, limit);
-        if(!actions || actions.length === 0) return res.status(404).json({ status: "fail", message: "No actions found" });
+        const scope = req.query.scope === "sent" ? "sent" : "received";
+
+        const actions = await getActionsForUser(user.id, page, limit, scope);
         return res.status(200).json({ status: "success", data: actions });
     }catch (e){
         next(e);

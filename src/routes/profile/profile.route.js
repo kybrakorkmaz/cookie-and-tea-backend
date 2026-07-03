@@ -1,6 +1,8 @@
 import express from "express";
 import {
     getUserPanel,  profilePostsController,
+    followUserController,
+    unfollowUserController,
 } from "../../controllers/profile.controller.js";
 import {validate} from "../../middleware/validate.js";
 import {
@@ -38,6 +40,9 @@ router.get("/:username/posts/preview", previewCommentsController);
 
 // Handles nested modification actions (PUT /:id, DELETE /:id) via your postsRoute
 router.use("/:username/posts", postsRoute);
+
+router.post("/:username/follow", followUserController);
+router.delete("/:username/follow", unfollowUserController);
 
 // Generic Catch-all Parameter (MUST BE LAST)
 // If the URL is just "/alice", it doesn't match the specific sub-routes or /posts, so it lands here safely.

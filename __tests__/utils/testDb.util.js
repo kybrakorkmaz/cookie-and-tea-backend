@@ -1,7 +1,7 @@
 // Cleanup function
 import {db} from "../../src/db/client.js";
 import {and, desc, eq, inArray, like, or} from "drizzle-orm";
-import {comments, donations, follows, posts, socials, users} from "../../src/db/schema/index.js";
+import {comments, donations, follows, posts, socials, users, actions} from "../../src/db/schema/index.js";
 import bcrypt from "bcrypt";
 
 /**
@@ -34,7 +34,8 @@ export const seedTestUser = async (overrides = {}, status = "active") => {
         status: overrides.status || status,
         about: overrides.about || null,
         profileImage: overrides.profileImage || null,
-        backgroundImage: overrides.backgroundImage || null
+        backgroundImage: overrides.backgroundImage || null,
+        stripeConnectId: overrides.stripeConnectId ?? null,
     }).returning();
 
     return {
@@ -141,6 +142,9 @@ export const purgeTestUsers = async (namespacePrefix = "test\\_") => {
     const userIds = targetUsers.map(u => u.id);
 
     // Clear out explicit child tables lacking automatic cascading options
+    await db.delete(actions).where(
+        or(inArray(actions.actorId, userIds), inArray(actions.targetUserId, userIds))
+    );
     await db.delete(donations).where(
         or(inArray(donations.donatorId, userIds), inArray(donations.receiverId, userIds))
     );

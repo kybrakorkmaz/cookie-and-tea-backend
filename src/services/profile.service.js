@@ -7,9 +7,13 @@ import {
     latestTwoFollowing,
     topSupportedTwoPosts, updateSocialMediaById,
     getImagesByUserId, getProfilePosts, getAllProfilePostIds,
+    findFollowRelationship,
+    insertFollow,
+    removeFollow,
 } from "../repositories/profile.repository.js";
 
 import {fetchPrevCommentsForIds} from "./comment.service.js";
+import { notifyFollow } from "./actions.service.js";
 
 export const getPanelInfo = async (user) =>{
     // required header properties
@@ -153,4 +157,40 @@ export const findProfilePrevComments = async (userId, page = 1, limit = 20) => {
 
     // Fetch comments using the repo
     return await fetchPrevCommentsForIds(allPostIds, page, limit);
+};
+
+export const followUser = async (follower, targetUser) => {
+    if (follower.id === targetUser.id) {
+        const error = new Error("You cannot follow yourself");
+        error.statusCode = 400;
+        throw error;
+    }
+
+    const existing = await findFollowRelationship(follower.id, targetUser.id);
+    if (existing.length > 0) {
+        const error = new Error("Already following this user");
+        error.statusCode = 400;
+        throw error;
+    }
+
+    const follow = await insertFollow(follower.id, targetUser.id);
+
+    await notifyFollow({
+        actorId: follower.id,
+        targetUserId: targetUser.id,
+    });
+
+    return follow;
+};
+
+export const unfollowUser = async (follower, targetUser) => {
+    const deleted = await removeFollow(follower.id, targetUser.id);
+
+    if (!deleted.length) {
+        const error = new Error("Follow relationship not found");
+        error.statusCode = 404;
+        throw error;
+    }
+
+    return deleted[0];
 };

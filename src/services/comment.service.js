@@ -2,11 +2,25 @@ import {
     createComment,
     deleteComment, fetchAllComments,
     findPrevComments,
+    getPostOwnerId,
     updateComment
 } from "../repositories/comment.repository.js";
+import { notifyComment } from "./actions.service.js";
 
 export const createCommentService = async (userId, postId, comment) => {
-    return await createComment(userId, postId, comment);
+    const newComment = await createComment(userId, postId, comment);
+
+    const postOwnerId = await getPostOwnerId(postId);
+    if (postOwnerId) {
+        await notifyComment({
+            actorId: userId,
+            targetUserId: postOwnerId,
+            postId,
+            message: comment,
+        });
+    }
+
+    return newComment;
 };
 
 // This is the common utility both Feed and Profile services call

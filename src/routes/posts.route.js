@@ -19,5 +19,4 @@ router.delete("/:postId", validate(postSchema.params), deletePostController);
 
 // Nested routes use the postId from the parent
 router.use("/:postId/comment", commentRoute);
-
 export default router;
