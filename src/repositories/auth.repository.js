@@ -1,7 +1,6 @@
-import {users} from "../db/schema/index.js";
-import {db} from "../db/client.js";
-import {eq} from "drizzle-orm";
-import {integer, text} from "drizzle-orm/pg-core";
+import { users } from "../db/schema/index.js";
+import { db } from "../db/client.js";
+import { eq } from "drizzle-orm";
 
 const authPayload = {
     id: users.id,
@@ -14,6 +13,7 @@ const authPayload = {
     backgroundImage: users.backgroundImage,
     about: users.about
 }
+
 export const findUserByEmail = async (email) => {
     const rows = await db.select(authPayload)
         .from(users)
@@ -21,6 +21,7 @@ export const findUserByEmail = async (email) => {
         .limit(1);
     return rows[0] || null;
 }
+
 export const findUserById = async (id) => {
     const rows = await db.select(authPayload)
         .from(users)
@@ -34,32 +35,31 @@ export const findUserByUsername = async (username) => {
         .from(users)
         .where(eq(users.username, username))
         .limit(1);
-
     return rows[0] || null;
 };
 
-export const changeAboutByUsername = async (username, about) =>{
+export const changeAboutByUsername = async (username, about) => {
     const updatedRows = await db.update(users)
         .set({ about: about })
         .where(eq(users.username, username))
         .returning({ about: users.about });
-
     return updatedRows[0] || null;
 }
 
-export const createNewUser = async (name, username, email, password) => {
+export const createNewUser = async (name, username, email, password, status = "pending") => {
     return db.insert(users)
         .values({
             name: name,
             username: username,
             email: email,
-            hashedPassword: password
+            hashedPassword: password,
+            status: status // 🎯 Assigns "active" during test bypass executions, bypassing Mailtrap
         }).returning();
 }
 
 export const updateUserStatus = async (userId, newStatus) => {
     const updatedRows = await db.update(users)
-        .set({ status: newStatus})
+        .set({ status: newStatus })
         .where(eq(users.id, userId))
         .returning();
     return updatedRows[0] || null;

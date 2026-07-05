@@ -36,6 +36,27 @@
       "when": 1780821308818,
       "tag": "0004_bouncy_mad_thinker",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1782562348557,
+      "tag": "0005_mature_smasher",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1783081457599,
+      "tag": "0006_parallel_moon_knight",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1783981457600,
+      "tag": "0007_iyzico_migration",
+      "breakpoints": true
     }
   ]
 }

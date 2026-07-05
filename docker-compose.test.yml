@@ -16,6 +16,8 @@ services:
       - /app/node_modules
     env_file:
       - .env.test
+    extra_hosts:
+      - "sandbox-api.iyzipay.com:213.226.118.91" # <-- Bypasses DNS completely
     environment:
       - IN_DOCKER=1
     depends_on:

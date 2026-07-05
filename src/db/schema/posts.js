@@ -1,4 +1,4 @@
-import { integer, pgEnum, pgTable, text, timestamp, check} from "drizzle-orm/pg-core";
+import {integer, pgEnum, pgTable, text, timestamp, check, index} from "drizzle-orm/pg-core";
 import {sql} from "drizzle-orm";
 import { users } from "./auth.js";
 import {actionTimestamp, timestamps} from "./common.js";
@@ -68,4 +68,7 @@ export const comments = pgTable("comments", {
 
     comment: text("comment").notNull(),
     ...timestamps()
-});
+}, (table) => ({
+    // It speeds up: WHERE post_id = X ORDER BY created_at DESC
+    postCreatedAtIdx: index("post_created_at_idx").on(table.postId, table.createdAt.desc()),
+}));

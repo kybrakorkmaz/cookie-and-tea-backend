@@ -1,42 +1,57 @@
 import express from "express";
-import {ENV} from "../../env.js";
 import {checkDatabaseConnection} from "../db/checkConnection.js";
+
 import profileRouter from "../routes/profile/profile.route.js";
 import authRouter from "../routes/auth/auth.route.js";
 import feedRouter from "../routes/feed.route.js";
+import donateRouter from "../routes/donation.route.js";
+import actionsRouter from "../routes/actions.route.js";
+
 import {errorHandler} from "../handlers/errorHandler.js";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import {testInterceptorMiddleware} from "../middleware/testInterceptor.middleware.js";
+import {ENV} from "../../env.js";
 const app = express();
+
+if (!ENV) {
+    console.error("CRITICAL ERROR: ENV object is undefined! Check your import path in app.js.");
+    process.exit(1);
+}
 
 // ALWAYS place CORS at the absolute top of your middleware stack!
 const corsOptions = {
     // development -> test -> production
     origin: ENV.FRONTEND_ORIGIN || "http://localhost:5173",
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    // ADDED 'OPTIONS' HERE - REQUIRED FOR CORS PREFLIGHT
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     // Added X-Requested-With and credentials headers for standard preflight compliance
     // Added Authorization to allowed headers for when restoring JWT tokens later
     // Whitelist your custom bypass test header
     allowedHeaders: ['Content-Type', 'X-Requested-With', 'Authorization', 'x-test-bypass'],
+    optionsSuccessStatus: 200 // Ensures browsers don't choke on the response
 }
 
+// 1. CORS & Parsers
 app.use(cors(corsOptions));
 app.use(cookieParser());
-// Middleware
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
-// Routes
+
+// 2. Global Middleware
+// REMOVED duplicate express.json() call
+app.use(testInterceptorMiddleware);
+// 3. Routes
 app.use("/api/v1/profile", profileRouter);
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/feed", feedRouter);
-app.use("/api/v1/posts", feedRouter); 
+app.use("/api/v1/posts", feedRouter);
+app.use("/api/v1/actions", actionsRouter);
+app.use("/api/v1/donate", donateRouter);
 
-// Legacy/compatibility aliases for tests
-app.use("/api/profile", profileRouter);
-app.use("/api/auth", authRouter);
-app.use("/api/posts", feedRouter);
-
+// Health & Root
 app.get("/", (req, res) => {
     res.json({
         message: "Cookie and Tea API",

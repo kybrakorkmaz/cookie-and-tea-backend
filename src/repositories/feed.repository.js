@@ -1,16 +1,14 @@
-import {db} from "../db/client.js";
-import {follows, posts, users} from "../db/schema/index.js";
-import {and, desc, eq, inArray, or} from "drizzle-orm";
+import { db } from "../db/client.js";
+import { follows, posts, users } from "../db/schema/index.js";
+import { desc, eq, inArray, or } from "drizzle-orm";
 
-// Feed Page: Authorized user posts + posts of people that user follows
-export const getFeedTimelineFromDB = async (userId) =>{
-    // Find IDs of users that the current user follows
+// Feed Page: Authorized user posts + posts of people that user follows with strict pagination controls
+export const getFeedTimelineFromDB = async (userId, limit = 5, offset = 0) => {
     const followedUserIds = db
-        .select({followingId: follows.followingId})
+        .select({ followingId: follows.followingId })
         .from(follows)
-        .where(eq(follows.followerId, userId)); // Fix: followerId
+        .where(eq(follows.followerId, userId));
 
-    // Fetch posts with author metadata attached
     return db
         .select({
             id: posts.id,
@@ -29,35 +27,23 @@ export const getFeedTimelineFromDB = async (userId) =>{
         })
         .from(posts)
         .innerJoin(users, eq(posts.userId, users.id))
-        .where(
-            or(
-                eq(posts.userId, userId),
-                inArray(posts.userId, followedUserIds)
-            )
-        ).orderBy(desc(posts.createdAt));
-}
-
+        .where(or(eq(posts.userId, userId), inArray(posts.userId, followedUserIds)))
+        .orderBy(desc(posts.createdAt))
+        .limit(limit)
+        .offset(offset);
+};
 
 export const createNewPost = async (postData) => {
-    const result = await db.insert(posts).values(postData).returning();
-    return result[0];
+    const [result] = await db.insert(posts).values(postData).returning();
+    return result;
 };
 
-export const findPostById = async (id) => {
-    const result = await db.select().from(posts).where(eq(posts.id, id)).limit(1);
-    return result[0];
-};
+export const getFeedPostIds = async (userId) => {
+    const following = db.select({ followingId: follows.followingId })
+        .from(follows)
+        .where(eq(follows.followerId, userId));
 
-export const updatePostById = async (userId, postId, updateData) => {
-    return db.update(posts)
-        .set({ ...updateData, updatedAt: new Date() })
-        .where(and(eq(posts.id, postId), eq(posts.userId, userId)))
-        .returning();
-};
-
-export const deletePostById = async (userId, id) => {
-    const result = await db.delete(posts)
-        .where(and(eq(posts.id, id), eq(posts.userId, userId)))
-        .returning();
-    return result[0];
+    return db.select({postId: posts.id})
+        .from(posts)
+        .where(or(eq(posts.userId, userId), inArray(posts.userId, following)));
 };

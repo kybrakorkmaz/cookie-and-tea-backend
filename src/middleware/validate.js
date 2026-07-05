@@ -10,11 +10,18 @@ export const validate = (schema) => {
                 query: req.query,
                 params: req.params,
             });
-            // Re-assign the normalized and sanitized states safely back to Express properties
-            req.body = parsedData.body || req.body;
-            req.query = parsedData.query || req.query;
-            req.params = parsedData.params || req.params;
 
+            if (parsedData.body) req.body = parsedData.body;
+            if (parsedData.params) req.params = parsedData.params
+
+            if (parsedData.query) {
+                // Clear the raw query properties cleanly
+                for (const key in req.query) {
+                    delete req.query[key];
+                }
+                // Copy the Zod-transformed/coerced values into the existing object container
+                Object.assign(req.query, parsedData.query);
+            }
             // If validation is successful, go to the next middleware/controller
             return next();
         } catch (error) {

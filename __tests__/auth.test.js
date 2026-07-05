@@ -62,6 +62,36 @@ describe("Auth User Integration Suit with Live Test DB", () =>{
             expect(dbUser).toBeDefined();
             expect(dbUser.status).toBe("pending"); // Must start out pending!
         })
+
+        it("should reject registration when username is already taken", async () => {
+            const payload = generateUserPayload();
+            // Assert baseline registration succeeds before verifying unique blocks
+            const setupResponse = await request(app).post("/api/v1/auth/sign-up").send(payload);
+            expect(setupResponse.status).toBe(201);
+
+            // attempt register with same username but different email
+            const payload2 = generateUserPayload({ username: payload.username, email: `other_${payload.email}` });
+            const response = await request(app).post("/api/v1/auth/sign-up").send(payload2);
+
+            expect(response.status).toBe(400);
+            expect(response.body.message).toBeDefined();
+            expect(response.body.message).toContain("Username");
+        });
+
+        it("should reject registration when email is already in use", async () => {
+            const payload = generateUserPayload();
+            // Assert baseline registration succeeds before verifying unique blocks
+            const setupResponse = await request(app).post("/api/v1/auth/sign-up").send(payload);
+            expect(setupResponse.status).toBe(201);
+
+            // attempt register with same email but different username
+            const payload2 = generateUserPayload({ username: `other_${payload.username}`, email: payload.email });
+            const response = await request(app).post("/api/v1/auth/sign-up").send(payload2);
+
+            expect(response.status).toBe(400);
+            expect(response.body.message).toBeDefined();
+            expect(response.body.message).toContain("Email");
+        });
     })
 
     // --- STEP 2: TEST EMAIL VERIFICATION

@@ -1,20 +1,37 @@
 import {login, registerNewUser, verifyUserToken} from "../services/auth.service.js";
 import {ENV} from "../../env.js";
+// @src/controllers/auth.controller.js
 
-export const signUpController = async (req,res, next) =>{
-    try{
+export const signUpController = async (req, res, next) => {
+    // Added try/catch block to prevent unhandled rejections from crashing the process
+    try {
         const {
             username,
             email,
             name,
             password,
         } = req.body;
-        const response = await registerNewUser(name, username, email, password);
-        return res.status(201).json(response);
-    }catch (e){
+
+        // BYPASS CHECK: Detect the test bypass signature
+        const isTestEnv = ENV.NODE_ENV === "test";
+        const hasBypassHeader = req.headers["x-test-bypass"] === ENV.BYPASS_SECRET;
+        const shouldBypassVerification = isTestEnv && hasBypassHeader;
+
+        // Pass the bypass instruction down to your registration service layer
+        const response = await registerNewUser(name, username, email, password, shouldBypassVerification);
+
+        // Return a helper mock flag in the response json so your frontend test suite knows an auto-verify took place
+        return res.status(201).json({
+            ...response,
+            ...(shouldBypassVerification && { autoVerified: true })
+        });
+    } catch (e) {
+        // Safely intercept the error and pass it to Express's central error handler
+        console.error("CRASH DETECTED IN SIGNUP PIPELINE:", e);
         next(e);
     }
 }
+
 export const verifyEmailController = async (req, res, next) => {
     try{
         const {token} = req.query; // Reads ?token=xxxxx from URL
@@ -81,6 +98,21 @@ export const logoutController = async (req, res, next) => {
             status: "success",
             message: "Logged out successfully."
         });
+    }catch (e){
+        next(e);
+    }
+}
+
+export const getMeController = async (req, res, next) =>{
+    try{
+        return res.status(200).json({
+            status: "success",
+            user: {
+                id: req.user.id,
+                username: req.user.username,
+                email: req.user.email
+            }
+        })
     }catch (e){
         next(e);
     }

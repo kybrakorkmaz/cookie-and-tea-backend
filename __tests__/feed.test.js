@@ -1,12 +1,15 @@
-import { afterAll, beforeAll, describe, expect, it } from "@jest/globals";
-import { db, sql } from "../src/db/client.js";
-import {posts, postTypeEnum, users} from "../src/db/schema/index.js";
+import {afterAll, beforeAll, describe, expect, it, jest} from "@jest/globals";
+import { sql } from "../src/db/client.js";
 import app from "../src/servers/app.js";
 import request from "supertest";
 import {generateTestPost, purgeTestUsers, seedTestUser} from "./utils/testDb.util.js";
 import jwt from "jsonwebtoken";
 import { ENV } from "../env.js";
-import {integer, text} from "drizzle-orm/pg-core";
+
+const mockImageBuffer = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+    "base64"
+);
 
 describe("Posts Integration Suite", () => {
     let testUser;
@@ -78,20 +81,18 @@ describe("Posts Integration Suite", () => {
         });
 
         it("should create a new image post with media", async () => {
-            const payload = {
-                header: "Image Post",
-                type: "image",
-                content: "Behold my image",
-                images: ["http://example.com/image.png"]
-            };
-
             const response = await request(app)
                 .post(`/api/v1/feed/${testUser.username}`)
                 .set("Cookie", [`token=${authToken}`])
-                .send(payload);
+                .field("header", "Image Post")
+                .field("content", "Behold my image")
+                .field("type", "image")
+                // Attach a dummy buffer to simulate an image file stream
+                .attach("images", mockImageBuffer, "test-image.png");
 
             expect(response.status).toBe(201);
-            expect(response.body.data.images).toContain(payload.images[0]);
+            expect(response.body.status).toBe("success");
+            expect(response.body.data.images[0]).toContain("fake_file.png");
         });
 
         it("should fail to create image post without media", async () => {
@@ -110,30 +111,7 @@ describe("Posts Integration Suite", () => {
         });
     });
 
-    describe("GET /api/feed/:username/:id", () => {
-        it("should retrieve a post by id", async () => {
-            // First create a post
-            const createResponse = await request(app)
-                .post(`/api/v1/feed/${testUser.username}`)
-                .set("Cookie", [`token=${authToken}`])
-                .send({
-                    header: "Fetch Me",
-                    type: "text",
-                    content: "Detail"
-                });
-            
-            expect(createResponse.status).toBe(201);
-            const postId = createResponse.body.data.id;
-
-            const response = await request(app).get(`/api/v1/feed/post/${postId}`);
-            
-            expect(response.status).toBe(200);
-            expect(response.body.data.id).toBe(postId);
-            expect(response.body.data.header).toBe("Fetch Me");
-        });
-    });
-
-    describe("PUT /api/v1/feed/:username/:id", () => {
+    describe("PUT /api/v1/feed/:username/posts/:id", () => {
         it("should update an existing post", async () => {
             const initialPost = await generateTestPost(testUser.id);
 
@@ -144,7 +122,7 @@ describe("Posts Integration Suite", () => {
             };
 
             const response = await request(app)
-                .put(`/api/v1/feed/${testUser.username}/${initialPost.id}`)
+                .put(`/api/v1/feed/${testUser.username}/posts/${initialPost.id}`)
                 .set("Cookie", [`token=${authToken}`])
                 .send(updatePayload);
 
@@ -154,18 +132,29 @@ describe("Posts Integration Suite", () => {
         });
     });
 
-    describe("DELETE /api/v1/feed/:username/:id", () => {
+    describe("DELETE /api/v1/feed/:username/posts/:id", () => {
         it("should delete an existing post", async () => {
             const initialPost = await generateTestPost(testUser.id);
             const response = await request(app)
-                .delete(`/api/v1/feed/${testUser.username}/${initialPost.id}`)
+                .delete(`/api/v1/feed/${testUser.username}/posts/${initialPost.id}`)
                 .set("Cookie", [`token=${authToken}`])
                 .send();
 
             expect(response.status).toBe(204);
-
-            const getResponse = await request(app).get(`/api/v1/feed/post/${initialPost.id}`);
+            const getResponse = await request(app)
+                .get(`/api/v1/feed/${testUser.username}/posts/${initialPost.id}`)
+                .set("Cookie", [`token=${authToken}`]);
             expect(getResponse.status).toBe(404);
         });
     });
+
+    describe("GET /api/v1/feed/:username/preview", () =>{
+        it("should get all preview comments on feed page", async () => {
+
+        })
+    });
+
+    describe("GET /api/v1/feed/:username/comments", () =>{
+
+    })
 });

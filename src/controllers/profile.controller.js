@@ -1,16 +1,18 @@
+// profile controller
 import {
     changeAbout,
     earnedMoney,
     getIntroDashboard,
     getPanelInfo, findTwoFollowing,
-    getUserAboutInfo, updateSocialMediaList, getGalleryByUserId
+    getUserAboutInfo, updateSocialMediaList, getGalleryByUserId, findProfilePosts, findProfilePrevComments,
+    followUser,
+    unfollowUser,
 } from "../services/profile.service.js";
-import {deletePost, findAllPosts, updatePost} from "../services/posts.service.js";
 
 // Called ONCE when the profile page loads
 export const getUserPanel = async (req, res, next) => {
     try {
-        const user = req.resolvedUser; 
+        const user = req.resolvedUser;
         const panelData = await getPanelInfo(user);
         return res.status(200).json(panelData);
     } catch (e) {
@@ -121,11 +123,51 @@ export const getTwoFollowing = async (req, res, next) =>{
         next(e);
     }
 }
+
+export const followUserController = async (req, res, next) => {
+    try {
+        const targetUser = req.resolvedUser;
+        const follower = { id: req.user.id };
+
+        const result = await followUser(follower, targetUser);
+
+        return res.status(201).json({
+            status: "success",
+            data: result,
+        });
+    } catch (e) {
+        next(e);
+    }
+};
+
+export const unfollowUserController = async (req, res, next) => {
+    try {
+        const targetUser = req.resolvedUser;
+        const follower = { id: req.user.id };
+
+        const result = await unfollowUser(follower, targetUser);
+
+        return res.status(200).json({
+            status: "success",
+            data: result,
+        });
+    } catch (e) {
+        next(e);
+    }
+};
+
 // Called when viewing the Gallery tab
 export const getUserGallery = async (req, res, next) => {
     try {
         const user = req.resolvedUser;
-        const galleryData = await getGalleryByUserId(user);
+
+        // Parse pagination criteria safely from the incoming query string
+        const page = req.query.page ? parseInt(req.query.page, 10) : 1;
+        const limit = req.query.limit ? parseInt(req.query.limit, 10) : 20;
+
+        // Thread variables downstream so the service layer executes a paginated chunk
+        const galleryData = await getGalleryByUserId(user, page, limit);
+
         return res.status(200).json({ status: "success", data: galleryData });
     } catch (e) {
         next(e);
@@ -134,59 +176,9 @@ export const getUserGallery = async (req, res, next) => {
 
 export const profilePostsController = async (req, res, next) => {
     try{
-       const user = req.resolvedUser;
-       const allPostData = await findAllPosts(user.id);
-       return res.status(200).json({status: "success", data: allPostData});
-    }catch (e){
-        next(e);
-    }
-}
-
-export const profilePostEditController = async (req, res, next) =>{
-    try{
-        const user  = req.resolvedUser;
-        const {id}= req.params; // post id
-        const newData  = req.body;
-
-        // Requirement: User can only see own posts on posts section and can delete and update THEM
-        // We must check if the authenticated user is the one whose profile is being viewed
-        // OR simply trust the service layer if it checks userId vs postId.
-        // Actually, for profile tab, the user should be updating THEIR own post.
-        if (req.user.id !== user.id) {
-            const error = new Error("Unauthorized: You can only update your own posts.");
-            error.statusCode = 403;
-            throw error;
-        }
-
-        const updatedPost = await updatePost(user.id, id, newData);
-
-        return res.status(200).json({
-            status: "success",
-            data: updatedPost
-        })
-    }catch (e){
-        next(e);
-    }
-}
-
-export const profilePostDeleteController = async (req, res, next) =>{
-    try{
         const user = req.resolvedUser;
-        const {id}= req.params; // post id
-
-        if (req.user.id !== user.id) {
-            const error = new Error("Unauthorized: You can only delete your own posts.");
-            error.statusCode = 403;
-            throw error;
-        }
-
-        const deletedPost = await deletePost(user.id, id);
-
-        return res.status(204).json({
-            status: "success",
-            data: deletedPost
-        });
-
+        const allPostData = await findProfilePosts(user.id);
+        return res.status(200).json({status: "success", data: allPostData});
     }catch (e){
         next(e);
     }

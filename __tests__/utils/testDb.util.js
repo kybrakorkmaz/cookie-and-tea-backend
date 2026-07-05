@@ -1,7 +1,7 @@
 // Cleanup function
 import {db} from "../../src/db/client.js";
-import {and, eq, inArray, like, or} from "drizzle-orm";
-import {comments, donations, follows, posts, socials, users} from "../../src/db/schema/index.js";
+import {and, desc, eq, inArray, like, or} from "drizzle-orm";
+import {comments, donations, follows, posts, socials, users, actions} from "../../src/db/schema/index.js";
 import bcrypt from "bcrypt";
 
 /**
@@ -34,7 +34,10 @@ export const seedTestUser = async (overrides = {}, status = "active") => {
         status: overrides.status || status,
         about: overrides.about || null,
         profileImage: overrides.profileImage || null,
-        backgroundImage: overrides.backgroundImage || null
+        backgroundImage: overrides.backgroundImage || null,
+        iyzicoSubMerchantKey: overrides.iyzicoSubMerchantKey ?? null,
+        iyzicoCardUserKey: overrides.iyzicoCardUserKey ?? null,
+        iyzicoCardToken: overrides.iyzicoCardToken ?? null,
     }).returning();
 
     return {
@@ -105,12 +108,29 @@ export const generateTestPost = async (userOrId)=>{
     return post;
 }
 
-
+export const getPost = async (userId) =>{
+    return db.select()
+        .from(posts).where(eq(posts.userId, userId))
+            .orderBy(desc(posts.createdAt))
+            .limit(1);
+}
 export const deletePost = async (userId, postId) =>{
     return db
-        .select()
-        .from(posts)
-        .where(and(eq(posts.userId, userId), eq(posts.id, postId)));
+        .delete(posts)
+        .where(and(eq(posts.userId, userId), eq(posts.id, postId)))
+        .returning();
+}
+
+export const generateTestComment = async (userId, postId, comment)=>{
+    const [newComment] = await db.insert(comments)
+        .values({
+            postId: postId,
+            commenterId: userId,
+            comment: comment
+        }).returning({
+            commentId: comments.id
+        })
+    return newComment;
 }
 /**
  * Sweeps the test database clean of any mock entities matching the test namespace patterns.
@@ -124,6 +144,9 @@ export const purgeTestUsers = async (namespacePrefix = "test\\_") => {
     const userIds = targetUsers.map(u => u.id);
 
     // Clear out explicit child tables lacking automatic cascading options
+    await db.delete(actions).where(
+        or(inArray(actions.actorId, userIds), inArray(actions.targetUserId, userIds))
+    );
     await db.delete(donations).where(
         or(inArray(donations.donatorId, userIds), inArray(donations.receiverId, userIds))
     );

@@ -113,4 +113,87 @@ export const getImagesByUserId = async (userId) =>{
         );
 }
 
+// Profile page: Authorized user's posts
+export const getProfilePosts = async (userId) =>  {
+    return db
+        .select({
+            id: posts.id,
+            userId: posts.userId,
+            type: posts.type,
+            header: posts.header,
+            content: posts.content,
+            images: posts.images,
+            videos: posts.videos,
+            commentCount: posts.commentCount,
+            donationSum: posts.donationSum,
+            createdAt: posts.createdAt,
+            authorName: users.name,
+            authorUsername: users.username,
+            authorProfileImage: users.profileImage
+        })
+        .from(posts)
+        .innerJoin(users, eq(posts.userId, users.id))
+        .where(eq(posts.userId, userId))
+        .orderBy(desc(posts.createdAt));
+}
 
+
+
+export const getAllProfilePostIds = async (userId) =>{
+    return db.select({
+        postId:posts.id
+    }).from(posts)
+        .where(eq(posts.userId, userId))
+}
+
+export const findFollowRelationship = async (followerId, followingId) => {
+    return db.select()
+        .from(follows)
+        .where(and(
+            eq(follows.followerId, followerId),
+            eq(follows.followingId, followingId)
+        ));
+};
+
+export const insertFollow = async (followerId, followingId) => {
+    return db.transaction(async (tx) => {
+        const [follow] = await tx.insert(follows)
+            .values({ followerId, followingId })
+            .returning();
+
+        await tx.update(users)
+            .set({ followingCount: sql`${users.followingCount} + 1` })
+            .where(eq(users.id, followerId));
+
+        await tx.update(users)
+            .set({ followerCount: sql`${users.followerCount} + 1` })
+            .where(eq(users.id, followingId));
+
+        return follow;
+    });
+};
+
+export const removeFollow = async (followerId, followingId) => {
+    return db.transaction(async (tx) => {
+        const deleted = await tx.delete(follows)
+            .where(and(
+                eq(follows.followerId, followerId),
+                eq(follows.followingId, followingId)
+            ))
+            .returning();
+
+        if (!deleted.length) {
+            return deleted;
+        }
+
+        await tx.update(users)
+            .set({ followingCount: sql`GREATEST(${users.followingCount} - 1, 0)` })
+            .where(eq(users.id, followerId));
+
+        await tx.update(users)
+            .set({ followerCount: sql`GREATEST(${users.followerCount} - 1, 0)` })
+            .where(eq(users.id, followingId));
+
+        return deleted;
+    });
+};
