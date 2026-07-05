@@ -8,6 +8,6 @@ export default {
     },
     setupFilesAfterEnv: [
         '<rootDir>/__tests__/setup/cloudinary.js',
-        '<rootDir>/__tests__/setup/stripe.js',
+        '<rootDir>/__tests__/setup/iyzico.js',
     ],
 };

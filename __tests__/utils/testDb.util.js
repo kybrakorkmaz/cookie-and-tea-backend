@@ -35,7 +35,9 @@ export const seedTestUser = async (overrides = {}, status = "active") => {
         about: overrides.about || null,
         profileImage: overrides.profileImage || null,
         backgroundImage: overrides.backgroundImage || null,
-        stripeConnectId: overrides.stripeConnectId ?? null,
+        iyzicoSubMerchantKey: overrides.iyzicoSubMerchantKey ?? null,
+        iyzicoCardUserKey: overrides.iyzicoCardUserKey ?? null,
+        iyzicoCardToken: overrides.iyzicoCardToken ?? null,
     }).returning();
 
     return {

@@ -3,7 +3,7 @@ import {ENV} from "../../env.js";
 // @src/controllers/auth.controller.js
 
 export const signUpController = async (req, res, next) => {
-    // 🚀 FIXED: Added try/catch block to prevent unhandled rejections from crashing the process
+    // Added try/catch block to prevent unhandled rejections from crashing the process
     try {
         const {
             username,
@@ -26,8 +26,8 @@ export const signUpController = async (req, res, next) => {
             ...(shouldBypassVerification && { autoVerified: true })
         });
     } catch (e) {
-        // 🚀 FIXED: Safely intercept the error and pass it to Express's central error handler
-        console.error("❌ CRASH DETECTED IN SIGNUP PIPELINE:", e);
+        // Safely intercept the error and pass it to Express's central error handler
+        console.error("CRASH DETECTED IN SIGNUP PIPELINE:", e);
         next(e);
     }
 }

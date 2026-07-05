@@ -25,11 +25,11 @@ describe("Donation Integration Tests", () => {
         await purgeTestUsers();
 
         donator = await seedTestUser(
-            { stripeConnectId: "acct_test_donator" },
+            { iyzicoCardUserKey: "card_user_test_donator", iyzicoCardToken: "card_token_test_donator" },
             "active"
         );
         recipient = await seedTestUser(
-            { stripeConnectId: "acct_test_recipient" },
+            { iyzicoSubMerchantKey: "sub_merchant_test_recipient" },
             "active"
         );
 
@@ -47,69 +47,90 @@ describe("Donation Integration Tests", () => {
         }
     });
 
-    describe("GET /api/v1/donate/connect/status", () => {
-        it("returns connected=true when user has a Stripe account", async () => {
+    describe("GET /api/v1/donate/card/status", () => {
+        it("returns connected=true when donator already tokenized a card", async () => {
             const response = await request(app)
-                .get("/api/v1/donate/connect/status")
+                .get("/api/v1/donate/card/status")
                 .set("Cookie", [`token=${donatorToken}`]);
 
             expect(response.status).toBe(200);
             expect(response.body.status).toBe("success");
             expect(response.body.data.connected).toBe(true);
-            expect(response.body.data.chargesEnabled).toBe(true);
         });
 
-        it("returns connected=false when user has no Stripe account", async () => {
-            const unconnectedUser = await seedTestUser({}, "active");
-            const token = signToken(unconnectedUser);
+        it("returns connected=false when user has no tokenized card", async () => {
+            const noCardUser = await seedTestUser({}, "active");
+            const token = signToken(noCardUser);
 
             const response = await request(app)
-                .get("/api/v1/donate/connect/status")
+                .get("/api/v1/donate/card/status")
                 .set("Cookie", [`token=${token}`]);
 
             expect(response.status).toBe(200);
             expect(response.body.data.connected).toBe(false);
-            expect(response.body.data.chargesEnabled).toBe(false);
         });
 
         it("returns 401 without authentication", async () => {
-            const response = await request(app).get("/api/v1/donate/connect/status");
+            const response = await request(app).get("/api/v1/donate/card/status");
             expect(response.status).toBe(401);
         });
     });
 
+    describe("POST /api/v1/donate/card", () => {
+        it("tokenizes and stores the user's card via Iyzico", async () => {
+            const noCardUser = await seedTestUser({}, "active");
+            const token = signToken(noCardUser);
+
+            const response = await request(app)
+                .post("/api/v1/donate/card")
+                .set("Cookie", [`token=${token}`])
+                .send({
+                    cardHolderName: "Test User",
+                    cardNumber: "5528790000000008",
+                    expireMonth: "12",
+                    expireYear: "2030",
+                    cvc: "123",
+                });
+
+            expect(response.status).toBe(200);
+            expect(response.body.status).toBe("success");
+            expect(response.body.data.cardUserKey).toBe("card_user_test_mock");
+
+            const [updatedUser] = await db
+                .select({ iyzicoCardToken: users.iyzicoCardToken })
+                .from(users)
+                .where(eq(users.id, noCardUser.id));
+
+            expect(updatedUser.iyzicoCardToken).toBe("card_token_test_mock");
+        });
+    });
+
     describe("POST /api/v1/donate/connect", () => {
-        it("returns an onboarding URL for unconnected users", async () => {
+        it("onboards a user as an Iyzico sub-merchant", async () => {
             const unconnectedUser = await seedTestUser({}, "active");
             const token = signToken(unconnectedUser);
 
             const response = await request(app)
                 .post("/api/v1/donate/connect")
-                .set("Cookie", [`token=${token}`]);
+                .set("Cookie", [`token=${token}`])
+                .send({});
 
             expect(response.status).toBe(200);
             expect(response.body.status).toBe("success");
-            expect(response.body.data.url).toContain("stripe.com");
-
-            const [updatedUser] = await db
-                .select({ stripeConnectId: users.stripeConnectId })
-                .from(users)
-                .where(eq(users.id, unconnectedUser.id));
-
-            expect(updatedUser.stripeConnectId).toBe("acct_test_mock");
+            expect(response.body.data.subMerchantKey).toBe("sub_merchant_test_mock");
         });
     });
 
-    describe("Donation tip endpoints", () => {
+    describe("Donation tip endpoints (3D Secure initiate)", () => {
         const tipCases = [
-            { route: "/api/v1/donate/tip-tea", amountDollars: 5, amountCents: 500 },
-            { route: "/api/v1/donate/tip-cookie", amountDollars: 7, amountCents: 700 },
-            { route: "/api/v1/donate/tip-cookie-tea", amountDollars: 12, amountCents: 1200 },
+            { route: "/api/v1/donate/tip-tea", amountDollars: 5 },
+            { route: "/api/v1/donate/tip-cookie", amountDollars: 7 },
+            { route: "/api/v1/donate/tip-cookie-tea", amountDollars: 12 },
         ];
 
         it.each(tipCases)(
-            "POST $route stores a $$amountDollars donation in the database",
-            async ({ route, amountDollars, amountCents }) => {
+            "POST $route returns Iyzico's 3D Secure confirmation content",
+            async ({ route }) => {
                 const response = await request(app)
                     .post(route)
                     .set("Cookie", [`token=${donatorToken}`])
@@ -117,25 +138,15 @@ describe("Donation Integration Tests", () => {
 
                 expect(response.status).toBe(200);
                 expect(response.body.status).toBe("success");
-                expect(response.body.data.amount).toBe(amountDollars);
-                expect(response.body.data.paymentIntentId).toBe("pi_test_mock");
-                expect(response.body.data.clientSecret).toBe("pi_test_mock_secret");
-                expect(response.body.data.donation.amount).toBe(amountCents);
-                expect(response.body.data.donation.receiverId).toBe(recipient.id);
-                expect(response.body.data.donation.donatorId).toBe(donator.id);
-
-                const [record] = await db
-                    .select()
-                    .from(donations)
-                    .where(eq(donations.id, response.body.data.donation.id));
-
-                expect(record.amount).toBe(amountCents);
+                expect(response.body.data.requires3ds).toBe(true);
+                expect(response.body.data.htmlContent).toBeTruthy();
+                expect(response.body.data.conversationId).toBeTruthy();
             }
         );
 
-        it("rejects donation when donator has no Stripe account", async () => {
-            const unconnectedDonator = await seedTestUser({}, "active");
-            const token = signToken(unconnectedDonator);
+        it("rejects donation when donator has no tokenized card", async () => {
+            const noCardDonator = await seedTestUser({}, "active");
+            const token = signToken(noCardDonator);
 
             const response = await request(app)
                 .post("/api/v1/donate/tip-tea")
@@ -143,10 +154,10 @@ describe("Donation Integration Tests", () => {
                 .send({ recipientUsername: recipient.username });
 
             expect(response.status).toBe(400);
-            expect(response.body.message).toContain("Your Stripe account is not connected");
+            expect(response.body.message).toContain("Please save a card with Iyzico");
         });
 
-        it("rejects donation when recipient has no Stripe account", async () => {
+        it("rejects donation when recipient has no Iyzico sub-merchant connection", async () => {
             const unconnectedRecipient = await seedTestUser({}, "active");
 
             const response = await request(app)
@@ -155,7 +166,7 @@ describe("Donation Integration Tests", () => {
                 .send({ recipientUsername: unconnectedRecipient.username });
 
             expect(response.status).toBe(400);
-            expect(response.body.message).toContain("Recipient's Stripe account is not connected");
+            expect(response.body.message).toContain("Recipient has not connected Iyzico");
         });
 
         it("rejects self-donation", async () => {
@@ -197,12 +208,55 @@ describe("Donation Integration Tests", () => {
         });
     });
 
-    describe("GET /api/v1/donate/history", () => {
-        it("returns donations received by the authenticated user", async () => {
-            await request(app)
+    describe("POST /api/v1/donate/callback (Iyzico 3DS confirmation)", () => {
+        it("finalizes the payment and records the donation after 3DS confirmation", async () => {
+            const initiateResponse = await request(app)
                 .post("/api/v1/donate/tip-tea")
                 .set("Cookie", [`token=${donatorToken}`])
                 .send({ recipientUsername: recipient.username });
+
+            const { conversationId } = initiateResponse.body.data;
+
+            const callbackResponse = await request(app)
+                .post("/api/v1/donate/callback")
+                .send({ conversationId, status: "success", mdStatus: "1", paymentId: "payment_test_mock" });
+
+            expect(callbackResponse.status).toBe(200);
+            expect(callbackResponse.text).toContain("iyzico-donation-result");
+
+            const [record] = await db
+                .select()
+                .from(donations)
+                .where(eq(donations.receiverId, recipient.id));
+
+            expect(record.amount).toBe(500);
+        });
+
+        it("rejects callback for unknown conversationId", async () => {
+            const response = await request(app)
+                .post("/api/v1/donate/callback")
+                .send({ conversationId: "unknown-id", status: "success", mdStatus: "1", paymentId: "x" });
+
+            expect(response.status).toBe(400);
+            expect(response.text).toContain("\"success\":false");
+        });
+    });
+
+    describe("GET /api/v1/donate/history", () => {
+        it("returns donations received by the authenticated user", async () => {
+            const initiateResponse = await request(app)
+                .post("/api/v1/donate/tip-tea")
+                .set("Cookie", [`token=${donatorToken}`])
+                .send({ recipientUsername: recipient.username });
+
+            await request(app)
+                .post("/api/v1/donate/callback")
+                .send({
+                    conversationId: initiateResponse.body.data.conversationId,
+                    status: "success",
+                    mdStatus: "1",
+                    paymentId: "payment_test_mock",
+                });
 
             const response = await request(app)
                 .get("/api/v1/donate/history")
@@ -222,9 +276,12 @@ describe("Donation Integration Tests", () => {
         });
 
         it("returns an empty array when user has no received donations", async () => {
+            const isolatedRecipient = await seedTestUser({}, "active");
+            const token = signToken(isolatedRecipient);
+
             const response = await request(app)
                 .get("/api/v1/donate/history")
-                .set("Cookie", [`token=${donatorToken}`]);
+                .set("Cookie", [`token=${token}`]);
 
             expect(response.status).toBe(200);
             expect(response.body.data).toEqual([]);

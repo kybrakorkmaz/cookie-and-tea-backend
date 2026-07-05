@@ -1,4 +1,4 @@
-import { getActionsForUser, markAsRead, purgeExpiredReads } from "../services/actions.service.js";
+import { getActionsForUser, markAsRead, purgeExpiredReads, removeAction } from "../services/actions.service.js";
 
 export const getActionsController = async (req, res, next) =>{
     try{
@@ -41,6 +41,29 @@ export const purgeExpiredReadsController = async (req, res, next) =>{
     try{
         const result = await purgeExpiredReads();
         return res.status(200).json({ status: "success", deleted: result.length });
+    }catch (e){
+        next(e);
+    }
+}
+
+// Permanently removes a notification/action entry for the requesting user.
+// NOTE: this only deletes the row from the `actions` (notifications) table.
+// The underlying transaction record (e.g. donation) is stored separately and is never touched here.
+export const deleteActionController = async (req, res, next) =>{
+    try{
+        const user = req.resolvedUser;
+        const actionId = parseInt(req.params.id, 10);
+
+        if (!Number.isInteger(actionId) || actionId <= 0) {
+            return res.status(400).json({ status: "fail", message: "Invalid action id" });
+        }
+
+        const result = await removeAction(actionId, user.id);
+        if (!result || result.length === 0) {
+            return res.status(404).json({ status: "fail", message: "Action not found" });
+        }
+
+        return res.status(200).json({ status: "success", data: result[0] });
     }catch (e){
         next(e);
     }

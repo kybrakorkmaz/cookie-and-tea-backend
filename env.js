@@ -43,7 +43,10 @@ const envSchema = z.object({
     CLOUDINARY_API_SECRET: z.string().min(1, "CLOUDINARY API SECRET required!"),
     CLOUDINARY_URL: z.string().min(1, "CLOUDINARY URL required!"),
 
-    STRIPE_SECRET_KEY: z.string().min(1, { message: "STRIPE_SECRET_KEY is required" }),
+    // Iyzico payment gateway credentials
+    IYZICO_API_KEY: z.string().min(1, { message: "IYZICO_API_KEY is required" }),
+    IYZICO_SECRET_KEY: z.string().min(1, { message: "IYZICO_SECRET_KEY is required" }),
+    IYZICO_BASE_URL: z.string().default("https://sandbox-api.iyzipay.com"),
 });
 
 // Parse and export

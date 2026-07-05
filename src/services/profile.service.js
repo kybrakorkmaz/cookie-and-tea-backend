@@ -175,10 +175,15 @@ export const followUser = async (follower, targetUser) => {
 
     const follow = await insertFollow(follower.id, targetUser.id);
 
-    await notifyFollow({
-        actorId: follower.id,
-        targetUserId: targetUser.id,
-    });
+    // Isolate notification pipeline inside a try-catch to keep the layer resilient
+    try {
+        await notifyFollow({
+            actorId: follower.id,
+            targetUserId: targetUser.id,
+        });
+    } catch (notificationError) {
+        console.error(`Best-effort notification failed for follower ${follower.id} targeting ${targetUser.id}:`, notificationError);
+    }
 
     return follow;
 };

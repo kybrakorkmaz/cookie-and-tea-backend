@@ -1,15 +1,26 @@
 import { db } from "../db/client.js";
-import { donations, users } from "../db/schema/index.js";
-import { desc, eq } from "drizzle-orm";
+import { donations, posts, users } from "../db/schema/index.js";
+import { desc, eq, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
 export const createDonation = async (donatorId, receiverId, amount, postId = null) => {
-    return db.insert(donations).values({
-        donatorId,
-        receiverId,
-        amount,
-        postId,
-    }).returning();
+    return db.transaction(async (tx) => {
+        const donation = await tx.insert(donations).values({
+            donatorId,
+            receiverId,
+            amount,
+            postId,
+        }).returning();
+
+        // Keep the post's donation total in sync so the UI (coin icon) reflects it immediately
+        if (postId) {
+            await tx.update(posts)
+                .set({ donationSum: sql`${posts.donationSum} + ${amount}` })
+                .where(eq(posts.id, postId));
+        }
+
+        return donation;
+    });
 };
 
 export const getDonationById = async (donationId) => {
@@ -42,7 +53,7 @@ export const getUserByUsername = async (username) => {
         username: users.username,
         email: users.email,
         name: users.name,
-        stripeConnectId: users.stripeConnectId,
+        iyzicoSubMerchantKey: users.iyzicoSubMerchantKey,
     }).from(users).where(eq(users.username, username));
 };
 
@@ -52,13 +63,23 @@ export const getUserById = async (userId) => {
         username: users.username,
         email: users.email,
         name: users.name,
-        stripeConnectId: users.stripeConnectId,
+        iyzicoSubMerchantKey: users.iyzicoSubMerchantKey,
+        iyzicoCardUserKey: users.iyzicoCardUserKey,
+        iyzicoCardToken: users.iyzicoCardToken,
     }).from(users).where(eq(users.id, userId));
 };
 
-export const updateUserStripeId = async (userId, stripeConnectId) => {
+export const updateUserSubMerchantKey = async (userId, iyzicoSubMerchantKey) => {
     return db.update(users).set({
-        stripeConnectId,
+        iyzicoSubMerchantKey,
+        updatedAt: new Date(),
+    }).where(eq(users.id, userId)).returning();
+};
+
+export const updateUserCard = async (userId, { iyzicoCardUserKey, iyzicoCardToken }) => {
+    return db.update(users).set({
+        iyzicoCardUserKey,
+        iyzicoCardToken,
         updatedAt: new Date(),
     }).where(eq(users.id, userId)).returning();
 };

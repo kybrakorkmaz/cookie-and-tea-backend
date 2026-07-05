@@ -61,8 +61,8 @@ export const notifyAction = async (payload) => {
 export const notifyComment = async ({ actorId, targetUserId, postId, message }) =>
     notifyAction({ actorId, targetUserId, type: "comment", postId, message });
 
-export const notifyDonation = async ({ actorId, targetUserId, amount }) =>
-    notifyAction({ actorId, targetUserId, type: "donation", amount });
+export const notifyDonation = async ({ actorId, targetUserId, amount, postId = null }) =>
+    notifyAction({ actorId, targetUserId, type: "donation", amount, postId });
 
 export const notifyFollow = async ({ actorId, targetUserId }) =>
     notifyAction({ actorId, targetUserId, type: "follow", message: "started following you" });

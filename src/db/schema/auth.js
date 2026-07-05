@@ -33,8 +33,12 @@ export const users = pgTable("users", {
     followerCount: integer("follower_count").default(0).notNull(),
     followingCount: integer("following_count").default(0).notNull(),
 
-    // Stripe Connect account ID (null if not connected)
-    stripeConnectId: varchar("stripe_connect_id", { length: 255 }),
+    // Iyzico sub-merchant key (null if this user hasn't onboarded to receive donations)
+    iyzicoSubMerchantKey: varchar("iyzico_sub_merchant_key", { length: 255 }),
+
+    // Iyzico tokenized card info (stored once, reused for one-click donations)
+    iyzicoCardUserKey: varchar("iyzico_card_user_key", { length: 255 }),
+    iyzicoCardToken: varchar("iyzico_card_token", { length: 255 }),
 
     ...timestamps(),
 });
