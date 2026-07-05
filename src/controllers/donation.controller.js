@@ -8,6 +8,14 @@ import {
     saveDonatorCard,
 } from "../services/donation.service.js";
 
+// Helper to safely escape JSON payloads intended for injection inside inline HTML <script> blocks
+const escapeJsonForScript = (obj) => {
+    return JSON.stringify(obj)
+        .replace(/</g, '\\u003c')
+        .replace(/>/g, '\\u003e')
+        .replace(/&/g, '\\u0026');
+};
+
 // 1. ADIM: Iframe içinde çalışacak sahte banka onay sayfası (HTML -> Base64)
 const generateMock3DPage = (amount, recipient) => {
     const html = `<!DOCTYPE html>
@@ -163,12 +171,16 @@ export const controllerTipCookieTea = async (req, res, next) => {
 export const controllerDonationCallback = async (req, res, next) => {
     try {
         const result = await completeDonation(req.body);
+        const safePayload = escapeJsonForScript({ type: "iyzico-donation-result", success: true, result });
+
         return res.status(200).send(`<!DOCTYPE html><html><body><script>
-            window.parent && window.parent.postMessage(${JSON.stringify({ type: "iyzico-donation-result", success: true, result })}, "*");
+            window.parent && window.parent.postMessage(${safePayload}, "*");
         </script></body></html>`);
     } catch (error) {
+        const safeErrorPayload = escapeJsonForScript({ type: "iyzico-donation-result", success: false, message: error.message });
+
         return res.status(error.statusCode || 400).send(`<!DOCTYPE html><html><body><script>
-            window.parent && window.parent.postMessage(${JSON.stringify({ type: "iyzico-donation-result", success: false, message: error.message })}, "*");
+            window.parent && window.parent.postMessage(${safeErrorPayload}, "*");
         </script></body></html>`);
     }
 };

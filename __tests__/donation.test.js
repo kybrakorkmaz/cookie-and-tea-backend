@@ -154,7 +154,8 @@ describe("Donation Integration Tests", () => {
                 .send({ recipientUsername: recipient.username });
 
             expect(response.status).toBe(400);
-            expect(response.body.message).toContain("Please save a card with Iyzico");
+            // Updated to match the strict service error payload
+            expect(response.body.message).toBe("Please save a card before donating.");
         });
 
         it("rejects donation when recipient has no Iyzico sub-merchant connection", async () => {
@@ -166,7 +167,8 @@ describe("Donation Integration Tests", () => {
                 .send({ recipientUsername: unconnectedRecipient.username });
 
             expect(response.status).toBe(400);
-            expect(response.body.message).toContain("Recipient has not connected Iyzico");
+            // Updated to match the strict service error payload
+            expect(response.body.message).toBe("Recipient cannot receive tips yet.");
         });
 
         it("rejects self-donation", async () => {
