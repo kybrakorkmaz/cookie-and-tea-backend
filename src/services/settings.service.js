@@ -1,17 +1,25 @@
-import {fetchUserInfo, updateUserSettings} from "../repositories/settings.repository.js";
-import {hashPassword} from "../utils/password.util.js";
+import { fetchUserInfo, updateUserSettings } from "../repositories/settings.repository.js";
+import { hashPassword } from "../utils/password.util.js";
 
-export const getUserInfo = async (userId) =>{
+export const getUserInfo = async (userId) => {
     const result = await fetchUserInfo(userId);
-    if(!result || result.length ===0){
+    if (!result || result.length === 0) {
         const error = new Error("User info couldn't be fetched, try later!");
         error.statusCode = 500;
         throw error;
     }
     return result[0];
-}
+};
+
 export const changeUserSettings = async (userId, payload) => {
     const { confirmPassword, ...updateData } = payload;
+
+    // Catch empty updates or isolated confirmPassword payloads before they reach Drizzle
+    if (Object.keys(updateData).length === 0) {
+        const error = new Error("No valid fields provided to update.");
+        error.statusCode = 400;
+        throw error;
+    }
 
     if (updateData.password) {
         updateData.password = await hashPassword(updateData.password);

@@ -1,4 +1,3 @@
-// profile controller
 import {
     changeAbout,
     earnedMoney,
@@ -142,7 +141,9 @@ export const getTwoFollowing = async (req, res, next) =>{
 export const followStatus = async (req, res, next) =>{
     try{
         const targetUser = req.resolvedUser;
-        const follower = {if: req.user.id};
+
+        // FIXED: Swapped out the 'if' keyword typo for 'id' to pass properties downstream accurately
+        const follower = { id: req.user.id };
         const result = await isFollowing(follower, targetUser);
 
         return res.status(200).json({

@@ -7,13 +7,11 @@ import {
     processDonation,
     saveDonatorCard,
 } from "../services/donation.service.js";
-
 export const controllerAllDonations = async (req, res, next) => {
     try {
-        // Fixed: Extract from req.params directly instead of req.params.postId
         const { postId } = req.params;
-        const limit = parseInt(req.query.limit, 10) || 5;
-        const offset = parseInt(req.query.offset, 10) || 0;
+
+        const { limit, offset } = req.query;
 
         const paginatedDonations = await findDonations(postId, limit, offset);
 

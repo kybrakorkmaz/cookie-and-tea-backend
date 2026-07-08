@@ -1,6 +1,6 @@
 import express from "express";
-import {authenticateToken} from "../middleware/auth.js";
-import {validate} from "../middleware/validate.js";
+import { authenticateToken } from "../middleware/auth.js";
+import { validate } from "../middleware/validate.js";
 import {
     controllerAllDonations,
     controllerCardConnectionStatus,
@@ -13,29 +13,30 @@ import {
     controllerTipCookieTea,
     controllerTipTea
 } from "../controllers/donation.controller.js";
-import {cardSchema, donationSchema} from "../validations/donation.validation.js";
+import { cardSchema, donationSchema, allDonationsSchema } from "../validations/donation.validation.js";
 
 const router = express.Router({ mergeParams: true });
-router.get("/", controllerAllDonations);
 
-// Public route: iyzico posts back here after the user confirms on iyzico's own
-// 3D Secure confirmation page, no auth token is available on that request.
+// PUBLIC INTERFACE: Iyzico posts back here natively from its external web context.
+// No application header authorization tokens will be present on this inbound webhook.
 router.post(
     "/callback",
-    express.urlencoded({ extended: true }), // Essential for parsing iyzico's incoming form data
+    express.urlencoded({ extended: true }),
     controllerDonationCallback
 );
 
+// --- PROTECTED GATEWAY ---
+// Intercepts downstream traffic to prevent data scraping and protect donor privacy
 router.use(authenticateToken);
 
-// Iyzico card tokenization ("connect card") routes - donator enters card details once
+// SECURED: Moved below authenticateToken to block anonymous access to donor PII
+router.get("/", validate(allDonationsSchema), controllerAllDonations);
+
+// Card Connection & Tipping Routes
 router.get("/card/status", controllerCardConnectionStatus);
 router.post("/card", validate(cardSchema), controllerSaveCard);
-
-// Iyzico sub-merchant onboarding routes - recipient connects to be able to receive donations
 router.get("/connect/status", controllerSubMerchantConnectionStatus);
 router.post("/connect", controllerConnectSubMerchant);
-
 router.get("/history", controllerDonationHistory);
 
 // Tier Tipping Routes

@@ -15,5 +15,9 @@ export const updateUserSettings = async (userId, updateData) => {
     return db.update(users)
         .set(updateData) // Drizzle automatically updates ONLY the fields present in this object
         .where(eq(users.id, userId))
-        .returning();
+        .returning({
+            username: users.username,
+            name: users.name,
+            email: users.email
+        });
 };
