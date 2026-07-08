@@ -1,5 +1,5 @@
 import {
-    completeDonation,
+    completeDonation, findDonations,
     getCardConnectionStatus,
     getDonationHistory,
     getSubMerchantConnectionStatus,
@@ -7,7 +7,22 @@ import {
     processDonation,
     saveDonatorCard,
 } from "../services/donation.service.js";
+export const controllerAllDonations = async (req, res, next) => {
+    try {
+        const { postId } = req.params;
 
+        const { limit, offset } = req.query;
+
+        const paginatedDonations = await findDonations(postId, limit, offset);
+
+        return res.status(200).json({
+            status: "success",
+            data: paginatedDonations
+        });
+    } catch (e) {
+        next(e);
+    }
+};
 // Helper to safely escape JSON payloads intended for injection inside inline HTML <script> blocks
 const escapeJsonForScript = (obj) => {
     return JSON.stringify(obj)

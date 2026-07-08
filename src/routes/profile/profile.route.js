@@ -13,7 +13,7 @@ import {resolveGlobalUsername} from "../../middleware/resolveUser.js";
 import profileIntroRouter from "./intro.route.js";
 import profileGalleryRouter from "./gallery.route.js";
 import postsRoute from "../posts.route.js";
-import {allCommentsController, previewCommentsController} from "../../controllers/comment.controller.js";
+import {previewCommentsController} from "../../controllers/comment.controller.js";
 
 const router = express.Router();
 

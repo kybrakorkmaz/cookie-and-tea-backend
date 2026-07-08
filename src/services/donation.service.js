@@ -8,9 +8,34 @@ import {
     getUserById,
     getDonationsByUser,
     updateUserSubMerchantKey,
-    updateUserCard,
+    updateUserCard, getDonationsByPostId,
 } from "../repositories/donation.repository.js";
 import { notifyDonation } from "./actions.service.js";
+
+export const findDonations = async (postId, limit, offset) => {
+    if (!postId) {
+        const error = new Error("Post ID parameter is required.");
+        error.statusCode = 400;
+        throw error;
+    }
+
+    const items = await getDonationsByPostId(postId, limit, offset);
+
+    return items.map((donation) => ({
+        id: donation.id,
+        amount: donation.amount,
+        amountDollars: donation.amount / 100,
+        postId: donation.postId,
+        createdAt: donation.createdAt,
+        donator: {
+            id: donation.donatorId,
+            name: donation.donatorName,
+            username: donation.donatorUsername,
+            profileImage: donation.donatorProfileImage
+        },
+        status: "paid",
+    }));
+};
 
 const pendingDonations = new Map();
 

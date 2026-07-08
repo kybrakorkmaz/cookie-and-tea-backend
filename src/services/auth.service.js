@@ -1,9 +1,9 @@
 import { createNewUser, findUserByEmail, findUserByUsername, updateUserStatus } from "../repositories/auth.repository.js";
-import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { ENV } from "../../env.js";
 import { sendEmail } from "../utils/email.util.js";
 import { emailSchema } from "../validations/auth.validation.js";
+import {hashPassword, verifyPassword} from "../utils/password.util.js";
 
 const generateToken = async (payload) => {
     const jwtSecret = ENV.JWT_SECRET;
@@ -42,15 +42,6 @@ export const verifyUserToken = async (token) => {
         }
         throw err;
     }
-}
-
-const hashPassword = async (password) => {
-    const saltRounds = 10;
-    return bcrypt.hash(password, saltRounds);
-}
-
-const verifyPassword = async (password, hashedPassword) => {
-    return bcrypt.compare(password, hashedPassword);
 }
 
 const prepareUserResponse = (user) => {

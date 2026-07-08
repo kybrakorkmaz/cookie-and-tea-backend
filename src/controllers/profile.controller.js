@@ -1,4 +1,3 @@
-// profile controller
 import {
     changeAbout,
     earnedMoney,
@@ -6,15 +5,30 @@ import {
     getPanelInfo, findTwoFollowing,
     getUserAboutInfo, updateSocialMediaList, getGalleryByUserId, findProfilePosts, findProfilePrevComments,
     followUser,
-    unfollowUser,
+    unfollowUser, isFollowing,
 } from "../services/profile.service.js";
 
 // Called ONCE when the profile page loads
 export const getUserPanel = async (req, res, next) => {
     try {
-        const user = req.resolvedUser;
+        const user = req.resolvedUser; // The user whose profile is being visited
+        const currentUserId = req.user.id; // The currently authenticated user
+
         const panelData = await getPanelInfo(user);
-        return res.status(200).json(panelData);
+
+        // 1. Determine if it's the user's own profile
+        const isOwnProfile = currentUserId === user.id;
+
+        // 2. Check if the logged-in user follows the profile owner
+        const following = isOwnProfile
+            ? false
+            : await isFollowing({ id: currentUserId }, user);
+
+        return res.status(200).json({
+            ...panelData,
+            isFollowing: following,
+            isOwnProfile: isOwnProfile
+        });
     } catch (e) {
         next(e);
     }
@@ -124,6 +138,22 @@ export const getTwoFollowing = async (req, res, next) =>{
     }
 }
 
+export const followStatus = async (req, res, next) =>{
+    try{
+        const targetUser = req.resolvedUser;
+
+        // FIXED: Swapped out the 'if' keyword typo for 'id' to pass properties downstream accurately
+        const follower = { id: req.user.id };
+        const result = await isFollowing(follower, targetUser);
+
+        return res.status(200).json({
+            status: "success",
+            data: result
+        })
+    }catch (e){
+        next(e);
+    }
+}
 export const followUserController = async (req, res, next) => {
     try {
         const targetUser = req.resolvedUser;

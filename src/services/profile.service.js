@@ -159,6 +159,11 @@ export const findProfilePrevComments = async (userId, page = 1, limit = 20) => {
     return await fetchPrevCommentsForIds(allPostIds, page, limit);
 };
 
+export const isFollowing = async (follower, targetUser) =>{
+    const isFollow = await findFollowRelationship(follower.id, targetUser.id);
+    return isFollow.length > 0;
+
+}
 export const followUser = async (follower, targetUser) => {
     if (follower.id === targetUser.id) {
         const error = new Error("You cannot follow yourself");
