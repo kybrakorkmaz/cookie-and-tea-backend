@@ -23,9 +23,26 @@ export const createDonation = async (donatorId, receiverId, amount, postId = nul
     });
 };
 
-export const getDonationById = async (donationId) => {
-    return db.select().from(donations)
-        .where(eq(donations.id, donationId));
+export const getDonationsByPostId = async (postId, limit, offset) => {
+    const donator = alias(users, "donator");
+
+    return db.select({
+        id: donations.id,
+        amount: donations.amount,
+        postId: donations.postId,
+        createdAt: donations.createdAt,
+        donatorId: donations.donatorId,
+        receiverId: donations.receiverId,
+        donatorName: donator.name,
+        donatorUsername: donator.username,
+        donatorProfileImage: donator.profileImage
+    })
+        .from(donations)
+        .innerJoin(donator, eq(donations.donatorId, donator.id))
+        .where(eq(donations.postId, postId))
+        .orderBy(desc(donations.createdAt))
+        .limit(limit)
+        .offset(offset);
 };
 
 export const getDonationsByUser = async (userId) => {

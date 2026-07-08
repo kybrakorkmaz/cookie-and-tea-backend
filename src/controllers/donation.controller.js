@@ -1,5 +1,5 @@
 import {
-    completeDonation,
+    completeDonation, findDonations,
     getCardConnectionStatus,
     getDonationHistory,
     getSubMerchantConnectionStatus,
@@ -8,6 +8,23 @@ import {
     saveDonatorCard,
 } from "../services/donation.service.js";
 
+export const controllerAllDonations = async (req, res, next) => {
+    try {
+        // Fixed: Extract from req.params directly instead of req.params.postId
+        const { postId } = req.params;
+        const limit = parseInt(req.query.limit, 10) || 5;
+        const offset = parseInt(req.query.offset, 10) || 0;
+
+        const paginatedDonations = await findDonations(postId, limit, offset);
+
+        return res.status(200).json({
+            status: "success",
+            data: paginatedDonations
+        });
+    } catch (e) {
+        next(e);
+    }
+};
 // Helper to safely escape JSON payloads intended for injection inside inline HTML <script> blocks
 const escapeJsonForScript = (obj) => {
     return JSON.stringify(obj)

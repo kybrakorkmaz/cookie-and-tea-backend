@@ -6,6 +6,8 @@ import authRouter from "../routes/auth/auth.route.js";
 import feedRouter from "../routes/feed.route.js";
 import donateRouter from "../routes/donation.route.js";
 import actionsRouter from "../routes/actions.route.js";
+import settingsRouter from "../routes/settings.route.js";
+
 
 import {errorHandler} from "../handlers/errorHandler.js";
 import cors from "cors";
@@ -50,6 +52,7 @@ app.use("/api/v1/feed", feedRouter);
 app.use("/api/v1/posts", feedRouter);
 app.use("/api/v1/actions", actionsRouter);
 app.use("/api/v1/donate", donateRouter);
+app.use("/api/v1/settings", settingsRouter);
 
 // Health & Root
 app.get("/", (req, res) => {

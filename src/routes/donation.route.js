@@ -2,6 +2,7 @@ import express from "express";
 import {authenticateToken} from "../middleware/auth.js";
 import {validate} from "../middleware/validate.js";
 import {
+    controllerAllDonations,
     controllerCardConnectionStatus,
     controllerConnectSubMerchant,
     controllerDonationCallback,
@@ -14,7 +15,8 @@ import {
 } from "../controllers/donation.controller.js";
 import {cardSchema, donationSchema} from "../validations/donation.validation.js";
 
-const router = express.Router();
+const router = express.Router({ mergeParams: true });
+router.get("/", controllerAllDonations);
 
 // Public route: iyzico posts back here after the user confirms on iyzico's own
 // 3D Secure confirmation page, no auth token is available on that request.
