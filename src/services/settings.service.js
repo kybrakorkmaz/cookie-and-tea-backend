@@ -22,7 +22,8 @@ export const changeUserSettings = async (userId, payload) => {
     }
 
     if (updateData.password) {
-        updateData.password = await hashPassword(updateData.password);
+        updateData.hashedPassword = await hashPassword(updateData.password);
+        delete updateData.password;
     }
 
     const result = await updateUserSettings(userId, updateData);

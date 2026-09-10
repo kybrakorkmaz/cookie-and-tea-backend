@@ -7,6 +7,7 @@ import feedRouter from "../routes/feed.route.js";
 import donateRouter from "../routes/donation.route.js";
 import actionsRouter from "../routes/actions.route.js";
 import settingsRouter from "../routes/settings.route.js";
+import cronRouter from "../routes/cron.route.js";
 
 
 import {errorHandler} from "../handlers/errorHandler.js";
@@ -27,7 +28,7 @@ const corsOptions = {
     origin: ENV.FRONTEND_ORIGIN || "http://localhost:5173",
     credentials: true,
     // ADDED 'OPTIONS' HERE - REQUIRED FOR CORS PREFLIGHT
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE','PATCH', 'OPTIONS'],
     // Added X-Requested-With and credentials headers for standard preflight compliance
     // Added Authorization to allowed headers for when restoring JWT tokens later
     // Whitelist your custom bypass test header
@@ -53,6 +54,7 @@ app.use("/api/v1/posts", feedRouter);
 app.use("/api/v1/actions", actionsRouter);
 app.use("/api/v1/donate", donateRouter);
 app.use("/api/v1/settings", settingsRouter);
+app.use("/api/v1/cron", cronRouter);
 
 // Health & Root
 app.get("/", (req, res) => {

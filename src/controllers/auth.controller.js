@@ -65,7 +65,9 @@ export const loginController = async (req, res, next) => {
             maxAge: 1*24*60*60*1000, // " Day in milliseconds
             httpOnly: true,          // Prevents Cross-Site Scripting (XSS) cookies access
             secure: ENV.NODE_ENV === "production", // HTTPS only in production
-            sameSite: "strict",          // Mitigates Cross-Site Request Forgery (CSRF)
+            // "none" is required in production because frontend and API are on
+            // different domains (cross-site); browsers drop "strict" cookies there.
+            sameSite: ENV.NODE_ENV === "production" ? "none" : "strict",
             path: "/"
         }
 
@@ -89,7 +91,7 @@ export const logoutController = async (req, res, next) => {
         res.cookie("token", "", {
             httpOnly: true,
             secure: ENV.NODE_ENV === "production",
-            sameSite: "strict", // must match login
+            sameSite: ENV.NODE_ENV === "production" ? "none" : "strict", // must match login
             path: "/",
             maxAge: 0 // tells the browser/Postman to delete the cookie instantly
         });

@@ -37,6 +37,10 @@ const envSchema = z.object({
     FROM_EMAIL: z.email().default("noreply@cookieandtea.com"),
     BYPASS_SECRET: z.string().min(1, { message: "BYPASS_SECRET configuration token is required" }),
 
+    // Vercel Cron secret — required in production to protect /api/v1/cron/* endpoints,
+    // optional locally (cron routes simply reject all requests when unset).
+    CRON_SECRET: z.string().optional(),
+
     // Cloudinary
     CLOUDINARY_CLOUD_NAME : z.string().min(1, {message: "CLOUD NAME required!"}),
     CLOUDINARY_API_KEY: z.string().min(1, {message: "CLOUDINARY API KEY required!"}),
