@@ -50,9 +50,14 @@ export const logger = winston.createLogger({
     ],
 });
 
-// 5. File Logging (Production Only)
-// We save logs to files so we can investigate issues later if the server crashes
-if (isProd) {
+// 5. File Logging (Production Only, non-serverless)
+// We save logs to files so we can investigate issues later if the server crashes.
+// Serverless platforms (Vercel sets process.env.VERCEL=1) run functions on a
+// READ-ONLY filesystem — mkdirSync/File transports throw EROFS at module scope
+// and kill every cold start with FUNCTION_INVOCATION_FAILED. On Vercel the
+// Console transport above is the correct sink: stdout is captured into Runtime Logs.
+const isServerless = !!process.env.VERCEL;
+if (isProd && !isServerless) {
     const logDir = path.resolve("logs");
 
     // Ensure the logs directory exists

@@ -15,6 +15,7 @@
     "db:migrate": "dotenv -e .env -- node src/db/migrate.js",
     "db:migrate:test": "cross-env NODE_ENV=test node --env-file=.env.test src/db/migrate.js",
     "db:seed": "dotenv -e .env -- node src/db/seed.js",
+    "email:test": "node src/scripts/sendTestEmail.js",
     "db:seed:test": "cross-env NODE_ENV=test node --env-file=.env.test src/db/seed.js",
     "test": "cross-env NODE_ENV=test node --env-file=.env.test node_modules/jest/bin/jest.js --runInBand --forceExit",
     "test:clean": "bash src/scripts/bash/test.sh clean",
