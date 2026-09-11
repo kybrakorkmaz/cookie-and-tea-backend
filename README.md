@@ -1,57 +1,113 @@
-# cookie-and-tea-backend
+# Cookie and Tea — Backend API
 
-A creator support platform API built with Express.js and PostgreSQL. Similar to Buy Me a Coffee or Ko-fi, this application allows creators to receive support through donations and messages from their supporters.
+REST API for **Cookie and Tea**, a creator-support platform in the spirit of Buy Me a Coffee / Ko-fi — supporters tip creators ("tea", "cookie", or both) and leave encouraging messages, without likes or vanity metrics.
 
-## Overview
+- **Live API:** https://cookie-and-tea-backend.vercel.app (health check: [`/health`](https://cookie-and-tea-backend.vercel.app/health))
+- **Live App (frontend):** https://cookie-and-tea.vercel.app
+- **Frontend repo:** [cookie-and-tea](https://github.com/kybrakorkmaz/cookie-and-tea)
 
-Cookie and Tea Backend provides a RESTful API for managing user authentication, profiles, posts, donations, and community interactions. The backend is containerized with Docker and supports multiple deployment environments with integrated testing infrastructure.
+---
 
-### Key Features
+## Türkçe
 
-- User authentication and authorization with JWT
-- Creator profiles and supporter management
-- Post creation and management
-- Donation tracking and processing
-- Email notifications
-- Database migrations and version control
-- Comprehensive test coverage
-- Production-ready Docker setup
+**Cookie and Tea**, içerik üreticilerinin takipçilerinden bağış ve destek mesajları alabildiği bir platformdur (Buy Me a Coffee / Ko-fi benzeri). Bu depo, platformun sunucu tarafını (REST API) içerir. Beğeni sayısı gibi "gösteriş metrikleri" bilinçli olarak yoktur; amaç gerçek destek etkileşimidir.
 
-## Getting Started
+### Canlı Bağlantılar
 
-### Prerequisites
+- **API:** https://cookie-and-tea-backend.vercel.app
+- **Uygulama (arayüz):** https://cookie-and-tea.vercel.app
+- **Arayüz deposu:** [cookie-and-tea](https://github.com/kybrakorkmaz/cookie-and-tea)
 
-- Docker and Docker Compose
-- Node.js 22+ (for local development without Docker)
-- PostgreSQL 15+ (for local development without Docker)
-- Bash-compatible shell (Git Bash, WSL, or Linux/macOS)
+### Öne Çıkan Özellikler
 
-### Quick Start
+- JWT + httpOnly cookie ile kimlik doğrulama, parolalar bcrypt ile saklanır
+- E-posta doğrulamalı kayıt akışı (Nodemailer); doğrulama bağlantısı kullanıcıyı giriş sayfasına yönlendirir
+- İsim/kullanıcı adına göre anlık kullanıcı arama (`GET /api/v1/search/users?q=...`)
+- Profil, gönderi, takip sistemi, bağış (İyzico altyapısı — şu an demo modunda), bildirim (actions) uçları
+- PostgreSQL + Drizzle ORM (yerelde Docker, canlıda Neon serverless)
+- Zod ile tüm isteklerde şema doğrulama; merkezi hata yönetimi ve Winston ile loglama
+- Jest + Supertest ile izole Docker test ortamı
+- Vercel üzerinde serverless dağıtım; günlük cron ile eski bildirim temizliği
+
+### Hızlı Başlangıç
+
+Gereksinimler: Docker + Docker Compose (önerilen) veya Node.js 22+ ve PostgreSQL 15+.
+
+```bash
+cp .env.example .env        # değerleri kendinize göre doldurun
+npm install
+npm run docker:dev up       # API + PostgreSQL + pgAdmin ayağa kalkar
+npm run docker:dev migrate  # veritabanı tabloları oluşturulur
+```
+
+API artık `http://localhost:8000` adresinde çalışır. Docker'sız çalıştırmak için: `npm run db:migrate` ardından `npm run dev`.
+
+### Test
+
+```bash
+npm run test:docker run     # izole ortam: kur → migrate → test → temizle
+```
+
+Detaylı İngilizce dokümantasyon aşağıdadır. ⬇️
+
+---
+
+## English
+
+### What Is This?
+
+Cookie and Tea is a full-stack creator-support platform. This repository is the backend: an Express 5 (ESM) REST API backed by PostgreSQL, responsible for authentication, email verification, profiles, posts, donations, follower relationships, notifications, and user search. It is deployed as a serverless function on Vercel with a Neon serverless Postgres database.
+
+The platform deliberately has **no like button and no nested comments** — interactions are designed around genuine support (tips + messages), not engagement metrics.
+
+### Feature Highlights
+
+- **Auth:** JWT in httpOnly cookies (`sameSite=none` in production for the cross-domain SPA), bcrypt password hashing, pending → active account lifecycle
+- **Email verification:** signed-up users receive a link; clicking it verifies the account and redirects to the frontend login page with a success/failure flag
+- **User search:** typeahead endpoint matching name or username (`ILIKE`, prefix-ranked, active users only)
+- **Donations:** three tiers (Tea $5 / Cookie $7 / Both $12) through the İyzico API — currently running in **mock mode** (`MOCK_IYZICO=true`) so the full flow works without real charges
+- **Media:** Cloudinary-backed image/video uploads (Multer in-memory → Cloudinary)
+- **Notifications ("actions"):** donation/follow events with read-state, plus a daily Vercel Cron job that purges expired read actions
+- **Observability:** Winston structured logging; a `POST /api/v1/logs/client` relay so frontend errors show up in backend logs
+- **Validation:** every request body/query/params validated with Zod; centralized error handler with consistent `{ status, message, errors? }` responses
+
+### Tech Stack
+
+| Area | Choice |
+|---|---|
+| Runtime / Framework | Node.js 22+, Express 5 (ESM) |
+| Database | PostgreSQL 15+ — Docker locally, Neon serverless in production |
+| ORM | Drizzle ORM + drizzle-kit migrations |
+| Auth | jsonwebtoken, bcrypt, cookie-parser |
+| Validation | Zod |
+| Payments | iyzipay (sandbox/mock) |
+| Email | Nodemailer (Gmail SMTP or Mailtrap) |
+| Media | Cloudinary, Multer |
+| Logging | Winston, Morgan |
+| Testing | Jest, Supertest, isolated Docker environment |
+| Deployment | Vercel (serverless), daily cron via `vercel.json` |
+
+### Getting Started
+
+#### Prerequisites
+
+- Docker and Docker Compose (recommended), **or** Node.js 22+ with PostgreSQL 15+
+- Bash-compatible shell for the environment scripts (Git Bash / WSL on Windows)
 
 #### Docker Setup (Recommended)
 
-1. Clone the repository and navigate to the project directory
-2. Configure environment variables by copying the example file:
-   ```bash
-   cp .env.example .env
-   ```
-   Update the values in `.env` with your configuration.
+```bash
+cp .env.example .env        # fill in your values
+npm install
+npm run docker:dev up       # API :8000, Postgres :5434, pgAdmin :5050
+npm run docker:dev migrate  # create tables
+```
 
-3. Start the development environment:
-   ```bash
-   npm run docker:dev up
-   ```
+The API is now at `http://localhost:8000`.
 
-4. Run database migrations:
-   ```bash
-   npm run docker:dev migrate
-   ```
+#### Local (no Docker)
 
-The API will be available at `http://localhost:8000`
-
-#### Local Development
-
-If you prefer running the Node.js server directly on your host machine:
+Point `DATABASE_URL` in `.env` at any reachable Postgres, then:
 
 ```bash
 npm install
@@ -59,274 +115,102 @@ npm run db:migrate
 npm run dev
 ```
 
-Ensure a PostgreSQL instance is running with the `DATABASE_URL` properly configured in `.env`.
-
----
-
-## Environment Configuration
-
-Environment variables are managed through `.env` files. Use the `.env.example` file as a reference template.
-
-### Key Environment Variables
-
-- `NODE_ENV`: Application environment (development, test, production)
-- `PORT`: API server port
-- `BASE_URL`: Base URL for the API
-- `JWT_SECRET`: Secret key for JWT token signing
-- `DATABASE_URL`: PostgreSQL connection string
-- `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`: Database credentials
-
-For development with pgAdmin:
-- `PGADMIN_DEFAULT_EMAIL`: pgAdmin login email
-- `PGADMIN_DEFAULT_PASSWORD`: pgAdmin login password
-- `PGADMIN_PORT`: pgAdmin interface port (default: 5050)
-
----
-
-## Project Structure
-
-### Environment Management
-
-This project uses coordinated bash scripts and npm commands to manage different environments (Development, Test, Production).
-
-#### Bash Scripts
-
-The core automation logic resides in `src/scripts/bash/`:
-- `dev.sh`: Manages the development stack
-- `test.sh`: Manages the test environment and runs tests
-- `prod.sh`: Manages the production stack
-
-Usage format: `npm run <environment> <command>`
-
-#### Command Support Matrix
-
-| Command | Development | Testing | Production | Description |
-|---------|:-----------:|:-------:|:----------:|-------------|
-| up | Yes | Yes | Yes | Start the environment |
-| down | Yes | Yes | Yes | Stop and remove containers |
-| logs | Yes | Yes | Yes | Stream container logs |
-| migrate | Yes | Yes | No | Run database migrations |
-| run | No | Yes | No | Full test cycle: up → migrate → test → down |
-| restart | Yes | No | No | Restart development containers |
-| ps | Yes | No | Yes | List container status |
-
----
-
-## Development
-
-### Starting the Development Environment
-
-```bash
-npm run docker:dev up
-```
-
-This starts:
-- Express API server on port 8000
-- PostgreSQL database on port 5434
-- pgAdmin on port 5050
-
-### Running Migrations
-
-```bash
-npm run docker:dev migrate
-```
-
-### Viewing Logs
-
-```bash
-npm run docker:logs
-```
-
-### Restarting Containers
-
-```bash
-npm run docker:dev restart
-```
-
-### Stopping the Environment
-
-```bash
-npm run docker:dev down
-```
-
-To also remove database volumes (reset database):
-```bash
-npm run docker:dev down -v
-```
-
-### Database Access
-
-- **pgAdmin:** Navigate to `http://localhost:5050`
-- **Internal Database:** `postgres://localhost:5432`
-- **External Database:** `postgres://localhost:5434`
-
----
-
-## Testing
-
-Tests are executed in an isolated Docker environment to ensure consistency and prevent interference with development data.
-
-### Running Tests
-
-Complete test cycle (creates environment, runs migrations, executes tests, cleans up):
-```bash
-npm run test:docker run
-```
-
-### Manual Test Environment Control
-
-Start test containers:
-```bash
-npm run test:docker up
-```
-
-Run database migrations on test database:
-```bash
-npm run test:docker migrate
-```
-
-Watch mode for development testing:
-```bash
-npm run test:docker watch
-```
-
-Stop and clean up test containers:
-```bash
-npm run test:docker down
-```
-
-### Parallel Development and Testing
-
-Both development and test environments can run simultaneously:
-- Development: Port 8000, Database 5434
-- Testing: Port 8001, Database 5435
-
-This allows feature development and testing without stopping containers or switching contexts.
-
----
-
-## Production
-
-The production environment uses a multi-stage Docker build for optimized image size and security.
-
-### Starting Production
-
-```bash
-npm run prod up
-```
-
-### Viewing Production Logs
-
-```bash
-npm run prod logs
-```
-
-### Stopping Production
-
-```bash
-npm run prod down
-```
-
-### Production Features
-
-- Non-root user execution for security
-- Minimal production dependencies
-- Health check endpoint for monitoring
-- Optimized Alpine Linux base image
-
----
-
-## Technology Stack
-
-### Core Framework
-- Express.js 5.2+: Web application framework
-- Node.js 22+: JavaScript runtime
-
-### Database
-- PostgreSQL 15+: Relational database
-- Drizzle ORM: Type-safe SQL query builder
-- Drizzle Kit: Database schema management
-
-### Authentication & Security
-- JWT (jsonwebtoken): Token-based authentication
-- bcrypt: Password hashing
-- CORS: Cross-Origin Resource Sharing
-
-### Email & Notifications
-- Nodemailer: Email delivery
-- Winston: Structured logging
-
-### Development & Testing
-- Jest: Unit and integration testing
-- Supertest: HTTP assertion library and server mocking
-- ESLint: Code quality and style
-
-### Utilities
-- Zod: Schema validation and TypeScript inference
-- Morgan: HTTP request logging
-
----
-
-## Code Quality
-
-### Linting
-
-Check code quality:
-```bash
-npm run lint
-```
-
-Auto-fix linting issues:
-```bash
-npm run lint:fix
-```
+#### Environment Scripts
+
+`npm run <env> <command>` is driven by the bash scripts in `src/scripts/bash/`:
+
+| Command | dev | test | prod | Description |
+|---|:-:|:-:|:-:|---|
+| `up` | ✓ | ✓ | ✓ | Start the environment |
+| `down` | ✓ | ✓ | ✓ | Stop and remove containers (`-v` also wipes volumes) |
+| `logs` | ✓ | ✓ | ✓ | Stream container logs |
+| `migrate` | ✓ | ✓ | — | Run database migrations |
+| `run` | — | ✓ | — | Full test cycle: up → migrate → test → down |
+| `restart` | ✓ | — | — | Restart dev containers |
+| `ps` | ✓ | — | ✓ | List container status |
+
+Dev and test stacks run side by side (API 8000/8001, DB 5434/5435).
+
+### Environment Variables
+
+See [`.env.example`](.env.example) for the annotated template. Essentials:
+
+| Variable | Purpose |
+|---|---|
+| `NODE_ENV` / `PORT` / `BASE_URL` | Runtime environment and server binding |
+| `JWT_SECRET` | Signs auth + email-verification tokens |
+| `DATABASE_URL` | Postgres connection string (Neon pooled URL in production) |
+| `FRONTEND_ORIGIN` | CORS origin and verification-redirect target |
+| `EMAIL_HOST` / `EMAIL_PORT` / `EMAIL_USERNAME` / `EMAIL_PASSWORD` / `FROM_NAME` / `FROM_EMAIL` | SMTP delivery (Gmail or Mailtrap) |
+| `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET` | Media uploads |
+| `IYZICO_API_KEY` / `IYZICO_SECRET_KEY` / `IYZICO_BASE_URL` | Payments (sandbox values for dev) |
+| `CRON_SECRET` | Bearer token guarding `/api/v1/cron/*` |
+| `BYPASS_SECRET` | Test-only header secret for auto-verifying signups |
+
+> Note: env vars are validated with Zod at boot — the server refuses to start with a missing/invalid configuration instead of failing later at runtime.
+
+### API Overview
+
+Base path: `/api/v1`
+
+| Group | Endpoints |
+|---|---|
+| Auth | `POST /auth/sign-up` · `POST /auth/login` · `POST /auth/logout` · `GET /auth/me` 🔒 · `GET /auth/verify-email?token=` (redirects to frontend) |
+| Search | `GET /search/users?q=&limit=` (public typeahead) |
+| Profile | `GET /profile/:username` 🔒 · `GET /profile/:username/posts` 🔒 · `POST|DELETE /profile/:username/follow` 🔒 · intro sub-routes: `about`, `socials`, `earnings`, `follow` 🔒 |
+| Feed / Posts | `GET /feed/:username` 🔒 · `POST /feed` (create post) 🔒 · `PUT|DELETE /posts/:postId` 🔒 |
+| Donations | `POST /donate/tip-tea | tip-cookie | tip-cookie-tea` 🔒 · `GET /donate/history` 🔒 · card & sub-merchant onboarding endpoints 🔒 |
+| Actions (notifications) | `GET /actions` 🔒 · `PUT /actions/:id/read` 🔒 · `DELETE /actions/:id` 🔒 |
+| Settings | `GET|PATCH /settings` 🔒 |
+| Ops | `GET /health` · `POST /logs/client` (frontend error relay) · `GET /cron/purge-actions` (Bearer `CRON_SECRET`) |
+
+🔒 = requires the auth cookie. Error responses share one shape: `{ status: "fail"|"error", message, errors?: [{field, message}] }`.
 
 ### Testing
 
-Run tests locally (requires local PostgreSQL setup):
 ```bash
-npm test
+npm run test:docker run   # isolated full cycle: up → migrate → jest → down
+npm test                  # against a locally configured test DB
 ```
 
----
+Jest + Supertest run against a dedicated Dockerized Postgres so tests never touch dev data.
 
-## Database
+### Deployment (Vercel + Neon)
 
-### Migrations
+- `app.js` at the repo root exports the Express app as the serverless entrypoint
+- Production uses Neon's WebSocket pool (transactions don't work over the HTTP driver)
+- File logging transports are disabled on Vercel (read-only FS) — logs go to the Vercel runtime console
+- `vercel.json` registers a daily cron (`0 3 * * *`) hitting `/api/v1/cron/purge-actions`
+- Frontend env var `VITE_API_BASE_URL` must point at this API's origin
 
-Generate new migration based on schema changes:
-```bash
-npm run db:generate
+### Useful Scripts
+
+| Script | Purpose |
+|---|---|
+| `npm run dev` | Nodemon dev server |
+| `npm run lint` / `lint:fix` | ESLint |
+| `npm run db:generate` / `db:migrate` / `db:seed` | Drizzle schema → migration → seed |
+| `npm run email:test <address>` | SMTP smoke test |
+
+### Project Structure
+
 ```
-
-Run pending migrations:
-```bash
-npm run db:migrate
+src/
+├── servers/        # app assembly + server bootstrap
+├── routes/         # Express routers per resource
+├── controllers/    # HTTP layer (req/res)
+├── services/       # business logic
+├── repositories/   # Drizzle queries
+├── db/             # client, schema, migrations, seed
+├── middleware/     # auth, validation, file validation
+├── validations/    # Zod request schemas
+├── handlers/       # centralized error handler
+├── lib/            # logger, scheduler
+└── scripts/        # bash env scripts, email smoke test
 ```
-
-### Schema
-
-Database schema is defined in `src/db/schema/` using Drizzle ORM's schema builder.
-
----
-
-## Contributing
-
-When contributing to this project:
-
-1. Run linting checks before committing
-2. Ensure all tests pass
-3. Follow the existing code structure and naming conventions
-4. Use meaningful commit messages
 
 ---
 
 ## License
 
-ISC
-
----
-
-## Support
-
-For issues and questions, please visit the GitHub repository issue tracker.
+ISC — © Kübra Korkmaz
