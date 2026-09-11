@@ -1,5 +1,5 @@
 // profile service
-import {changeAboutByUsername} from "../repositories/auth.repository.js";
+import {changeAboutByUsername, updateUserImagesById} from "../repositories/auth.repository.js";
 import {
     findSocialsByUserId,
     getUserEarningsById,
@@ -85,6 +85,24 @@ export const changeAbout = async (user, about) =>{
 }
 export const updateSocialMediaList = async (user, socials) =>{
     return await updateSocialMediaById(user.id, socials);
+}
+
+const saveUserImage = async (userId, imageFields) => {
+    const result = await updateUserImagesById(userId, imageFields);
+    if (!result) {
+        const error = new Error("Database transaction failed to execute update sequence");
+        error.statusCode = 500;
+        throw error;
+    }
+    return result;
+}
+
+export const changeProfileImage = async (user, imageUrl) => {
+    return saveUserImage(user.id, { profileImage: imageUrl });
+}
+
+export const changeCoverImage = async (user, imageUrl) => {
+    return saveUserImage(user.id, { backgroundImage: imageUrl });
 }
 export const findTwoFollowing = async (user, isFollow) =>{
     if(isFollow) return []; // Explicitly return empty array payload instead of breaking flow

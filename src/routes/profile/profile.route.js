@@ -3,6 +3,8 @@ import {
     getUserPanel,  profilePostsController,
     followUserController,
     unfollowUserController,
+    uploadProfilePhotoController,
+    uploadCoverImageController,
 } from "../../controllers/profile.controller.js";
 import {validate} from "../../middleware/validate.js";
 import {
@@ -10,6 +12,7 @@ import {
 } from "../../validations/profile.validation.js";
 import {authenticateToken} from "../../middleware/auth.js";
 import {resolveGlobalUsername} from "../../middleware/resolveUser.js";
+import {uploadSingleImage} from "../../middleware/multer.middleware.js";
 import profileIntroRouter from "./intro.route.js";
 import profileGalleryRouter from "./gallery.route.js";
 import postsRoute from "../posts.route.js";
@@ -22,6 +25,10 @@ router.param("username", resolveGlobalUsername);
 
 // Session Shield
 router.use(authenticateToken);
+
+// Own-profile image uploads (single-segment paths — no :username conflict)
+router.post("/photo", uploadSingleImage, uploadProfilePhotoController);
+router.post("/cover", uploadSingleImage, uploadCoverImageController);
 
 // Tab 1: Profile Intro (Main tab)
 router.use("/:username/intro", profileIntroRouter);

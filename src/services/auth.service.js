@@ -16,6 +16,56 @@ const generateToken = async (payload) => {
     return jwt.sign(payload, jwtSecret, claims);
 }
 
+// User-controlled values must be escaped before landing in HTML emails
+const escapeHtml = (value) => String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
+// Branded verification email — table layout + inline styles for email-client compatibility.
+// Colors mirror the frontend palette (primary-dark #5E0006, cream #EED9B9);
+// the CTA uses a deep vivid green (#15803d).
+const buildVerificationEmailHtml = (name, verificationUrl) => `
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background-color:#EED9B9;font-family:Georgia,'Times New Roman',serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#EED9B9;padding:40px 16px;">
+    <tr><td align="center">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background-color:#FFFFFF;border-radius:16px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.08);">
+        <tr>
+          <td style="background-color:#5E0006;padding:24px 32px;text-align:center;">
+            <span style="color:#FFFFFF;font-size:24px;font-weight:bold;letter-spacing:1px;">Cookie and Tea</span>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:32px;">
+            <h1 style="margin:0 0 16px;color:#5E0006;font-size:22px;">Welcome, ${escapeHtml(name)}!</h1>
+            <p style="margin:0 0 24px;color:#333333;font-size:15px;line-height:1.6;">
+              Thanks for signing up. Please confirm your email address to activate your account — this link expires in 24 hours.
+            </p>
+            <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+              <tr><td align="center" style="padding-bottom:24px;">
+                <a href="${verificationUrl}" style="display:inline-block;background-color:#15803d;color:#FFFFFF;font-size:16px;font-weight:bold;text-decoration:none;padding:14px 36px;border-radius:12px;">Verify my account</a>
+              </td></tr>
+            </table>
+            <p style="margin:0 0 8px;color:#666666;font-size:13px;line-height:1.6;">Button not working? Paste this link into your browser:</p>
+            <p style="margin:0;word-break:break-all;"><a href="${verificationUrl}" style="color:#9B0F06;font-size:13px;">${verificationUrl}</a></p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:20px 32px;background-color:#FAF3E7;text-align:center;">
+            <p style="margin:0;color:#999999;font-size:12px;">If you didn't create an account, you can safely ignore this email.</p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
 export const verifyUserToken = async (token) => {
     try {
         const decoded = jwt.verify(token, ENV.JWT_SECRET, {
@@ -105,7 +155,7 @@ export const registerNewUser = async (name, username, email, password, bypassVer
                 to: newUser.email,
                 subject: "Welcome! Please verify your email",
                 message: `Hi ${newUser.name}, verify your account here: ${verificationUrl}`,
-                html: `<p>Hi ${newUser.name},</p><p>Please click <a href="${verificationUrl}">here</a> to verify your account.</p>`
+                html: buildVerificationEmailHtml(newUser.name, verificationUrl)
             });
             logger.info("Verification email dispatched", { userId: newUser.id, messageId: info?.messageId });
         } catch (emailError) {

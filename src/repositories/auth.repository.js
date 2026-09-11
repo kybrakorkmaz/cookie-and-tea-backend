@@ -64,3 +64,20 @@ export const updateUserStatus = async (userId, newStatus) => {
         .returning();
     return updatedRows[0] || null;
 }
+
+// Updates profile and/or background image — only provided fields are touched
+export const updateUserImagesById = async (userId, imageFields) => {
+    const updates = {};
+    if (imageFields.profileImage !== undefined) updates.profileImage = imageFields.profileImage;
+    if (imageFields.backgroundImage !== undefined) updates.backgroundImage = imageFields.backgroundImage;
+    if (Object.keys(updates).length === 0) return null;
+
+    const updatedRows = await db.update(users)
+        .set(updates)
+        .where(eq(users.id, userId))
+        .returning({
+            profileImage: users.profileImage,
+            backgroundImage: users.backgroundImage
+        });
+    return updatedRows[0] || null;
+}

@@ -6,7 +6,47 @@ import {
     getUserAboutInfo, updateSocialMediaList, getGalleryByUserId, findProfilePosts, findProfilePrevComments,
     followUser,
     unfollowUser, isFollowing,
+    changeProfileImage,
+    changeCoverImage,
 } from "../services/profile.service.js";
+import {uploadToCloudinary} from "../config/cloudinary.js";
+
+// Shared pipeline for profile photo / cover image uploads.
+// req.file is populated by the uploadSingleImage multer middleware.
+const handleImageUpload = async (req, saveImage) => {
+    if (!req.file) {
+        const error = new Error("No image file provided.");
+        error.statusCode = 400;
+        throw error;
+    }
+
+    const imageUrl = await uploadToCloudinary(req.file.buffer, "image");
+    return saveImage(req.user, imageUrl);
+};
+
+export const uploadProfilePhotoController = async (req, res, next) => {
+    try {
+        const result = await handleImageUpload(req, changeProfileImage);
+        return res.status(200).json({
+            status: "success",
+            data: { profileImage: result.profileImage }
+        });
+    } catch (e) {
+        next(e);
+    }
+};
+
+export const uploadCoverImageController = async (req, res, next) => {
+    try {
+        const result = await handleImageUpload(req, changeCoverImage);
+        return res.status(200).json({
+            status: "success",
+            data: { backgroundImage: result.backgroundImage }
+        });
+    } catch (e) {
+        next(e);
+    }
+};
 
 // Called ONCE when the profile page loads
 export const getUserPanel = async (req, res, next) => {
