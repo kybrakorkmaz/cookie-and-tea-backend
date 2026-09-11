@@ -8,6 +8,7 @@ import donateRouter from "../routes/donation.route.js";
 import actionsRouter from "../routes/actions.route.js";
 import settingsRouter from "../routes/settings.route.js";
 import cronRouter from "../routes/cron.route.js";
+import logRouter from "../routes/log.route.js";
 
 
 import {errorHandler} from "../handlers/errorHandler.js";
@@ -55,6 +56,7 @@ app.use("/api/v1/actions", actionsRouter);
 app.use("/api/v1/donate", donateRouter);
 app.use("/api/v1/settings", settingsRouter);
 app.use("/api/v1/cron", cronRouter);
+app.use("/api/v1/logs", logRouter);
 
 // Health & Root
 app.get("/", (req, res) => {
