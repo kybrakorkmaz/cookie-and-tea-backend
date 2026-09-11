@@ -22,8 +22,10 @@ export const postSchema = {
         body: z.object({
             header: z.string().trim().min(1).max(200).optional(),
             content: z.string().trim().max(1500).or(z.literal("")).optional(),
-            existingImages: z.array(z.string()).optional(),
-            existingVideos: z.array(z.string()).optional()
+            // Multipart forms send a single entry as a plain string, multiple as an array —
+            // accept both; the controller normalizes to an array.
+            existingImages: z.union([z.string(), z.array(z.string())]).optional(),
+            existingVideos: z.union([z.string(), z.array(z.string())]).optional()
         })
     })
 };

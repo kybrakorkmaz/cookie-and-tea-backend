@@ -28,7 +28,7 @@ router.use(resolveUserById); // Injects req.resolvedUser (the viewer)
 router.post(
     "/:username",
     uploadMiddleware, // 1. Parse multipart (populates req.body AND req.files)
-    validate(postSchema), // 2. Validate now that req.body exists
+    validate(postSchema.create), // 2. Validate now that req.body exists
     validateMediaCount, // 3. Validate File Counts/Size
     createPostController // 4. Save to DB
 );
