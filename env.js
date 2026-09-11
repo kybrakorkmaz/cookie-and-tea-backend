@@ -41,6 +41,13 @@ const envSchema = z.object({
     // optional locally (cron routes simply reject all requests when unset).
     CRON_SECRET: z.string().optional(),
 
+    // CORS allowed origin. MUST be declared here — zod strips undeclared keys,
+    // so without this line ENV.FRONTEND_ORIGIN is always undefined and the
+    // app.js fallback (localhost:5173) silently wins, breaking production CORS.
+    FRONTEND_ORIGIN: z
+        .url({ message: "Invalid FRONTEND_ORIGIN URL format" })
+        .default("http://localhost:5173"),
+
     // Cloudinary
     CLOUDINARY_CLOUD_NAME : z.string().min(1, {message: "CLOUD NAME required!"}),
     CLOUDINARY_API_KEY: z.string().min(1, {message: "CLOUDINARY API KEY required!"}),
