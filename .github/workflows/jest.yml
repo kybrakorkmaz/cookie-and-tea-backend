@@ -1,0 +1,76 @@
+name: Jest Tests
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: cat_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d cat_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      # Keep your valid checkout commit pin intact
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # .env.test is gitignored, so CI generates it with self-contained dummy values.
+      # Cloudinary/iyzico are mocked in __tests__/setup, and SMTP failures are
+      # swallowed by the sign-up flow, so no real external credentials are needed.
+      - name: Create test environment file
+        run: |
+          cat > .env.test << 'EOF'
+          NODE_ENV=test
+          PORT=8001
+          BASE_URL=http://localhost:8001
+          DATABASE_URL=postgres://postgres:postgres@localhost:5432/cat_test
+          JWT_SECRET=ci_jest_jwt_secret
+          EMAIL_HOST=localhost
+          EMAIL_PORT=2525
+          EMAIL_USERNAME=ci_dummy
+          EMAIL_PASSWORD=ci_dummy
+          FROM_NAME=Cookie & Tea CI
+          FROM_EMAIL=noreply@cookieandtea.com
+          BYPASS_SECRET=ci_jest_bypass_secret
+          FRONTEND_ORIGIN=http://localhost:5173
+          CLOUDINARY_CLOUD_NAME=ci_dummy
+          CLOUDINARY_API_KEY=ci_dummy
+          CLOUDINARY_API_SECRET=ci_dummy
+          CLOUDINARY_URL=cloudinary://ci:ci@ci_dummy
+          MOCK_IYZICO=true
+          IYZICO_API_KEY=ci_dummy
+          IYZICO_SECRET_KEY=ci_dummy
+          IYZICO_BASE_URL=https://sandbox-api.iyzipay.com
+          EOF
+
+      - name: Run database migrations
+        run: npm run db:migrate:test
+
+      - name: Run Jest suite
+        run: npm test

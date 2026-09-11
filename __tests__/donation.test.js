@@ -110,14 +110,41 @@ describe("Donation Integration Tests", () => {
             const unconnectedUser = await seedTestUser({}, "active");
             const token = signToken(unconnectedUser);
 
+            // The service requires mandatory bank details before it ever calls Iyzico
+            const response = await request(app)
+                .post("/api/v1/donate/connect")
+                .set("Cookie", [`token=${token}`])
+                .send({
+                    gsmNumber: "+905551112233",
+                    identityNumber: "12345678901",
+                    iban: "TR330006100519786457841326",
+                    address: "Test Address 1"
+                });
+
+            expect(response.status).toBe(200);
+            expect(response.body.status).toBe("success");
+            // MOCK_IYZICO=true short-circuits with a generated key; otherwise the
+            // iyzico config mock returns "sub_merchant_test_mock" — either way it persists
+            expect(response.body.data.subMerchantKey).toBeDefined();
+
+            const [updatedUser] = await db
+                .select({ iyzicoSubMerchantKey: users.iyzicoSubMerchantKey })
+                .from(users)
+                .where(eq(users.id, unconnectedUser.id));
+            expect(updatedUser.iyzicoSubMerchantKey).toBe(response.body.data.subMerchantKey);
+        });
+
+        it("returns 400 when mandatory bank details are missing", async () => {
+            const unconnectedUser = await seedTestUser({}, "active");
+            const token = signToken(unconnectedUser);
+
             const response = await request(app)
                 .post("/api/v1/donate/connect")
                 .set("Cookie", [`token=${token}`])
                 .send({});
 
-            expect(response.status).toBe(200);
-            expect(response.body.status).toBe("success");
-            expect(response.body.data.subMerchantKey).toBe("sub_merchant_test_mock");
+            expect(response.status).toBe(400);
+            expect(response.body.message).toContain("Missing mandatory bank details");
         });
     });
 

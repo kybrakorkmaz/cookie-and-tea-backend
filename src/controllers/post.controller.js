@@ -38,11 +38,12 @@ export const updatePostController = async (req, res, next) => {
 
 export const deletePostController = async (req, res, next) => {
     try {
-        const { id } = req.params; // Post ID
+        // Route standard is :postId (see posts.route.js) — req.params.id never exists
+        const postId = parseInt(req.params.postId, 10);
         const userId = req.user.id; // Logged-in User ID
 
         // Service handles the authorization check
-        await deletePost(userId, id);
+        await deletePost(userId, postId);
 
         return res.status(204).end();
     } catch (e) {

@@ -56,7 +56,10 @@ describe("Profile Integration Suite with Live Test DB", ()=>{
                 name: "Kubra Korkmaz",
                 username: testUser.username,
                 profileImage: "profile.png",
-                backgroundImage: "bg.png"
+                backgroundImage: "bg.png",
+                // Viewing your own profile: ownership flag on, follow flag off
+                isOwnProfile: true,
+                isFollowing: false
             });
         });
         it("should validate missing inputs and return HTTP 400 Bad Request", async () => {

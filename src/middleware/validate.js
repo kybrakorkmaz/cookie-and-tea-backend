@@ -15,12 +15,15 @@ export const validate = (schema) => {
             if (parsedData.params) req.params = parsedData.params
 
             if (parsedData.query) {
-                // Clear the raw query properties cleanly
-                for (const key in req.query) {
-                    delete req.query[key];
-                }
-                // Copy the Zod-transformed/coerced values into the existing object container
-                Object.assign(req.query, parsedData.query);
+                // Express 5 defines req.query as a prototype getter that re-parses the
+                // URL on every access — mutating the returned object is silently lost.
+                // Shadow the getter with an own property holding the Zod-transformed values.
+                Object.defineProperty(req, "query", {
+                    value: parsedData.query,
+                    writable: true,
+                    enumerable: true,
+                    configurable: true,
+                });
             }
             // If validation is successful, go to the next middleware/controller
             return next();

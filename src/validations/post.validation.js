@@ -4,8 +4,11 @@ const idValidator = z.coerce.number().int().positive();
 
 export const postSchema = {
     // Used for the URL /.../posts/:postId
+    // Must wrap in `params` — the validate middleware always passes { body, query, params }
     params: z.object({
-        postId: idValidator
+        params: z.object({
+            postId: idValidator
+        })
     }),
     // Used for creation
     create: z.object({

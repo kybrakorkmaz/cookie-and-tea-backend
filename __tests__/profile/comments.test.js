@@ -6,7 +6,9 @@ import { sql } from "../../src/db/client.js";
 import request from "supertest";
 import app from "../../src/servers/app.js";
 
-describe("Profile All Comments Pagination", () =>{
+// Covers the per-post comments endpoint mounted under the profile router:
+// GET /api/v1/profile/:username/posts/:postId/comment
+describe("Profile Post Comments Pagination", () =>{
     let testUser;
     let authToken;
 
@@ -34,12 +36,18 @@ describe("Profile All Comments Pagination", () =>{
         }
     });
 
-    it("should return 404 when no comments exist", async ()=>{
+    it("should return 200 with an empty array when the post has no comments", async ()=>{
+        // Convention (see allCommentsController): an existing post with zero
+        // comments is a 200 with [], not a 404
+        const post = await generateTestPost(testUser.id);
+
         const response = await request(app)
-            .get(`/api/v1/profile/${testUser.username}/comments`)
+            .get(`/api/v1/profile/${testUser.username}/posts/${post.id}/comment`)
             .set("Cookie", [`token=${authToken}`]);
 
-        expect(response.status).toBe(404);
+        expect(response.status).toBe(200);
+        expect(response.body.status).toBe("success");
+        expect(response.body.data).toEqual([]);
     });
 
     it("should return paginated comments", async ()=>{
@@ -51,7 +59,7 @@ describe("Profile All Comments Pagination", () =>{
         await generateTestComment(testUser.id, targetPostId, "comment 2");
 
         const response = await request(app)
-            .get(`/api/v1/profile/${testUser.username}/comments`)
+            .get(`/api/v1/profile/${testUser.username}/posts/${targetPostId}/comment`)
             .query({page:1, limit:1})
             .set("Cookie", [`token=${authToken}`]);
 

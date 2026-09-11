@@ -95,8 +95,10 @@ describe("Auth User Integration Suit with Live Test DB", () =>{
     })
 
     // --- STEP 2: TEST EMAIL VERIFICATION
+    // This endpoint is only ever opened by a browser clicking the email link —
+    // it responds with a 302 redirect to the frontend login page, never raw JSON.
     describe("GET /api/v1/auth/verify-email", ()=>{
-        it("should activate user status when a valid token is provided", async()=>{
+        it("should activate user status and redirect to login with verified=1 when a valid token is provided", async()=>{
             // Factory handles context creation and password hashing automatically
             const seededUser = await seedTestUser({}, "pending");
 
@@ -110,26 +112,25 @@ describe("Auth User Integration Suit with Live Test DB", () =>{
             // Act: send the verification query token via query parameters
             const response = await request(app).get(`/api/v1/auth/verify-email?token=${mockToken}`);
 
-            // Assert response payload values
-            expect(response.status).toBe(200);
-            expect(response.body.message).toBeDefined();
-            expect(response.body.status).toBe("success");
+            // Assert the browser is bounced to the frontend login page with a success flag
+            expect(response.status).toBe(302);
+            expect(response.headers.location).toBe(`${ENV.FRONTEND_ORIGIN}/login?verified=1`);
 
             // Assert database mutations directly: confirm status transitioned to "active"
             const [updatedUser] = await db.select().from(users).where(eq(users.id, seededUser.id)).limit(1);
             expect(updatedUser.status).toBe("active");
         });
 
-        it("should return 400 Bad Request if the verification token is invalid", async () =>{
+        it("should redirect with verified=0&reason=invalid-or-expired if the verification token is invalid", async () =>{
             const response = await request(app).get("/api/v1/auth/verify-email?token=invalid_garbage_token");
-            expect(response.status).toBe(400);
-            expect(response.body.message).toContain("Invalid verification link");
+            expect(response.status).toBe(302);
+            expect(response.headers.location).toBe(`${ENV.FRONTEND_ORIGIN}/login?verified=0&reason=invalid-or-expired`);
         });
 
-        it("should return 400 Bad Request if the verification token is missing", async () => {
+        it("should redirect with verified=0&reason=missing-token if the verification token is missing", async () => {
             const response = await request(app).get("/api/v1/auth/verify-email");
-            expect(response.status).toBe(400);
-            expect(response.body.message).toBeDefined();
+            expect(response.status).toBe(302);
+            expect(response.headers.location).toBe(`${ENV.FRONTEND_ORIGIN}/login?verified=0&reason=missing-token`);
         });
     });
 
