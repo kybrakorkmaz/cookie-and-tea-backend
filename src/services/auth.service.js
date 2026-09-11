@@ -4,6 +4,7 @@ import { ENV } from "../../env.js";
 import { sendEmail } from "../utils/email.util.js";
 import { emailSchema } from "../validations/auth.validation.js";
 import {hashPassword, verifyPassword} from "../utils/password.util.js";
+import { logger } from "../lib/logger.js";
 
 const generateToken = async (payload) => {
     const jwtSecret = ENV.JWT_SECRET;
@@ -95,13 +96,16 @@ export const registerNewUser = async (name, username, email, password, bypassVer
         const token = await generateToken(payload);
         const verificationUrl = `${ENV.BASE_URL}/api/v1/auth/verify-email?token=${token}`;
 
-        // Fire-and-forget email; swallow errors to avoid async logging outside request lifecycle
+        // Fire-and-forget email (registration must not wait on SMTP), but NEVER
+        // silently: dispatch failures must surface in Runtime Logs to debug SMTP config.
         sendEmail({
             to: newUser.email,
             subject: "Welcome! Please verify your email",
             message: `Hi ${newUser.name}, verify your account here: ${verificationUrl}`,
             html: `<p>Hi ${newUser.name},</p><p>Please click <a href="${verificationUrl}">here</a> to verify your account.</p>`
-        }).catch(() => {});
+        })
+            .then((info) => logger.info("Verification email dispatched", { userId: newUser.id, messageId: info?.messageId }))
+            .catch((emailError) => logger.error("Verification email dispatch failed", { error: emailError?.message, userId: newUser.id }));
 
         return {
             message: "Registration successful. Please verify your email.",
