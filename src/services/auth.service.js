@@ -96,16 +96,21 @@ export const registerNewUser = async (name, username, email, password, bypassVer
         const token = await generateToken(payload);
         const verificationUrl = `${ENV.BASE_URL}/api/v1/auth/verify-email?token=${token}`;
 
-        // Fire-and-forget email (registration must not wait on SMTP), but NEVER
-        // silently: dispatch failures must surface in Runtime Logs to debug SMTP config.
-        sendEmail({
-            to: newUser.email,
-            subject: "Welcome! Please verify your email",
-            message: `Hi ${newUser.name}, verify your account here: ${verificationUrl}`,
-            html: `<p>Hi ${newUser.name},</p><p>Please click <a href="${verificationUrl}">here</a> to verify your account.</p>`
-        })
-            .then((info) => logger.info("Verification email dispatched", { userId: newUser.id, messageId: info?.messageId }))
-            .catch((emailError) => logger.error("Verification email dispatch failed", { error: emailError?.message, userId: newUser.id }));
+        // SERVERLESS NOTE: this MUST be awaited. On Vercel the function instance
+        // can freeze as soon as the response is sent, killing fire-and-forget
+        // promises mid-flight — the email would silently never send.
+        // Errors are still caught so registration succeeds even if SMTP fails.
+        try {
+            const info = await sendEmail({
+                to: newUser.email,
+                subject: "Welcome! Please verify your email",
+                message: `Hi ${newUser.name}, verify your account here: ${verificationUrl}`,
+                html: `<p>Hi ${newUser.name},</p><p>Please click <a href="${verificationUrl}">here</a> to verify your account.</p>`
+            });
+            logger.info("Verification email dispatched", { userId: newUser.id, messageId: info?.messageId });
+        } catch (emailError) {
+            logger.error("Verification email dispatch failed", { error: emailError?.message, userId: newUser.id });
+        }
 
         return {
             message: "Registration successful. Please verify your email.",
