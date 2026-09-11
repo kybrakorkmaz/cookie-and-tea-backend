@@ -1,5 +1,6 @@
 import {login, registerNewUser, verifyUserToken} from "../services/auth.service.js";
 import {ENV} from "../../env.js";
+import {logger} from "../lib/logger.js";
 // @src/controllers/auth.controller.js
 
 export const signUpController = async (req, res, next) => {
@@ -32,21 +33,24 @@ export const signUpController = async (req, res, next) => {
     }
 }
 
-export const verifyEmailController = async (req, res, next) => {
+export const verifyEmailController = async (req, res) => {
+    // This endpoint is only ever opened by a browser clicking the email link —
+    // respond with a redirect to the frontend, never raw JSON.
+    const loginUrl = `${ENV.FRONTEND_ORIGIN}/login`;
     try{
         const {token} = req.query; // Reads ?token=xxxxx from URL
 
         if(!token) {
-            const error = new Error("Verification token missing");
-            error.statusCode = 400;
-            return next(error);
+            return res.redirect(`${loginUrl}?verified=0&reason=missing-token`);
         }
 
         await verifyUserToken(token);
 
-        return res.status(200).json({status: "success", message: "Email successfully! You can now log in."});
+        return res.redirect(`${loginUrl}?verified=1`);
     }catch (e){
-        next(e);
+        // Expired/invalid token or unexpected failure → land on login with a flag
+        logger.error("Email verification failed", { error: e?.message });
+        return res.redirect(`${loginUrl}?verified=0&reason=invalid-or-expired`);
     }
 }
 
