@@ -1,6 +1,7 @@
 import { drizzle as drizzleNeon } from "drizzle-orm/neon-serverless";
 import { migrate as migrateNeon } from "drizzle-orm/neon-serverless/migrator";
-import { neon } from "@neondatabase/serverless";
+import { Pool, neonConfig } from "@neondatabase/serverless";
+import ws from "ws";
 import { drizzle as drizzleLocal } from "drizzle-orm/postgres-js";
 import { migrate as migrateLocal } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
@@ -20,10 +21,14 @@ async function runMigration() {
     console.log(`Target Environment Validated: ${nodeEnv}`);
 
     if (nodeEnv === "production") {
-        // PRODUCTION: Neon Serverless HTTP Context
-        console.log("Applying structural scripts via Neon HTTP Serverless Driver...");
-        const sqlClient = neon(dbUrl);
-        const db = drizzleNeon(sqlClient);
+        // PRODUCTION: Neon over a WebSocket Pool.
+        // The neon() HTTP function's payloads are rejected by drizzle's
+        // neon-serverless session ("could not parse the HTTP request body"),
+        // and the migrator needs real transaction support.
+        console.log("Applying structural scripts via Neon WebSocket Driver...");
+        neonConfig.webSocketConstructor = ws;
+        const pool = new Pool({ connectionString: dbUrl });
+        const db = drizzleNeon(pool);
 
         try {
             await migrateNeon(db, { migrationsFolder: "./src/db/migrations" });
@@ -31,6 +36,8 @@ async function runMigration() {
         } catch (error) {
             console.error("Production Migration lifecycle failed:", error);
             process.exit(1);
+        } finally {
+            await pool.end();
         }
     } else {
         // DEVELOPMENT & TEST: Local Docker Postgres TCP Context

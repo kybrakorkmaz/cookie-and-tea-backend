@@ -49,6 +49,7 @@
     "nodemailer": "^8.0.10",
     "postgres": "^3.4.9",
     "winston": "^3.19.0",
+    "ws": "^8.21.3",
     "zod": "^4.4.3"
   },
   "devDependencies": {

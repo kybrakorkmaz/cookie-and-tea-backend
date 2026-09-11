@@ -1,6 +1,7 @@
 // DB Connection
 import {drizzle as drizzleNeon} from "drizzle-orm/neon-serverless";
-import {neon} from "@neondatabase/serverless";
+import {neon, Pool, neonConfig} from "@neondatabase/serverless";
+import ws from "ws";
 import * as schema from "./schema/index.js";
 import {ENV} from "../../env.js";
 import postgres from "postgres";
@@ -11,10 +12,17 @@ let db;
 let sql;
 
 if(ENV.NODE_ENV === "production"){
-    // PRODUCTION: Neon Serverless (HTTP)
+    // PRODUCTION: Neon Serverless
+    // Raw HTTP function — cheap one-off queries (e.g. /health SELECT 1)
     const client = neon(ENV.DATABASE_URL);
     sql = client;
-    db = drizzleNeon(client, { schema });
+
+    // Drizzle runs over a WebSocket Pool instead: the neon-serverless drizzle
+    // driver rejects HTTP-function payloads ("could not parse the HTTP request
+    // body"), and db.transaction() requires a stateful connection regardless.
+    neonConfig.webSocketConstructor = ws;
+    const pool = new Pool({ connectionString: ENV.DATABASE_URL });
+    db = drizzleNeon(pool, { schema });
 }else{
     // DEVELOPMENT/TEST: Local Postgres (TCP/Binary)
     let localDbUrl = ENV.DATABASE_URL;
