@@ -1,6 +1,6 @@
 import { db } from "../db/client.js";
 import { donations, pendingDonations, posts, users } from "../db/schema/index.js";
-import { desc, eq, sql } from "drizzle-orm";
+import { desc, eq, lt, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
 export const createDonation = async (donatorId, receiverId, amount, postId = null) => {
@@ -36,6 +36,12 @@ export const insertPendingDonation = async ({ conversationId, donatorId, receive
     });
 };
 
+export const getPendingDonation = async (conversationId) => {
+    return db.select()
+        .from(pendingDonations)
+        .where(eq(pendingDonations.conversationId, conversationId));
+};
+
 // One-time use: DELETE ... RETURNING is atomic — a replayed/raced callback gets
 // zero rows back and is rejected by the service layer.
 export const consumePendingDonation = async (conversationId) => {
@@ -47,6 +53,14 @@ export const consumePendingDonation = async (conversationId) => {
 export const deletePendingDonation = async (conversationId) => {
     return db.delete(pendingDonations)
         .where(eq(pendingDonations.conversationId, conversationId));
+};
+
+// Maintenance sweep for abandoned sessions (user closed the 3DS tab etc.) —
+// called by the daily scheduler and the /cron/purge-actions endpoint
+export const deleteExpiredPendingDonations = async () => {
+    return db.delete(pendingDonations)
+        .where(lt(pendingDonations.expiresAt, new Date()))
+        .returning({ conversationId: pendingDonations.conversationId });
 };
 
 export const getDonationsByPostId = async (postId, limit, offset) => {

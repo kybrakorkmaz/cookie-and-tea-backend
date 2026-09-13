@@ -12,6 +12,7 @@ import {
     insertPendingDonation,
     consumePendingDonation,
     deletePendingDonation,
+    getPendingDonation,
 } from "../repositories/donation.repository.js";
 import { getPostById } from "../repositories/post.repository.js";
 import { notifyDonation } from "./actions.service.js";
@@ -295,9 +296,10 @@ export const processDonation = async (donatorId, recipientUsername, amountInDoll
 export const completeDonation = async (callbackBody) => {
     const { conversationId, status, mdStatus, paymentId, mockToken } = callbackBody;
 
-    // Atomic one-time consume — a replayed or raced callback gets nothing
-    const consumed = await consumePendingDonation(conversationId);
-    const pending = consumed?.[0];
+    // Verify BEFORE consuming: a forged/expired/declined callback must not burn
+    // a legitimate session, and a transient gateway failure must stay retryable.
+    const sessionRows = await getPendingDonation(conversationId);
+    const pending = sessionRows?.[0];
     if (!pending) {
         const error = new Error("Unknown or expired donation session");
         error.statusCode = 400;
@@ -305,12 +307,14 @@ export const completeDonation = async (callbackBody) => {
     }
 
     if (new Date(pending.expiresAt).getTime() < Date.now()) {
+        await deletePendingDonation(conversationId); // definitive — clean up now
         const error = new Error("Donation session expired. Please try again.");
         error.statusCode = 400;
         throw error;
     }
 
     if (status !== "success" || !["1", "2", "3", "4"].includes(String(mdStatus))) {
+        await deletePendingDonation(conversationId); // declined — session is done
         const error = new Error("3D Secure confirmation failed or was declined");
         error.statusCode = 400;
         throw error;
@@ -320,19 +324,30 @@ export const completeDonation = async (callbackBody) => {
 
     if (isMockIyzico()) {
         // No iyzico server-side verification exists in mock mode — the HMAC
-        // signature embedded in the generated mock page is the proof of origin
+        // signature embedded in the generated mock page is the proof of origin.
+        // Session is kept on mismatch: forgery attempts can't burn the real one.
         if (!isValidMockCallback(conversationId, mockToken)) {
             const error = new Error("Invalid payment confirmation signature");
             error.statusCode = 400;
             throw error;
         }
     } else {
+        // Gateway verification failure is potentially transient — session stays
         const result = await promisify(iyzico.threedsPayment.create.bind(iyzico.threedsPayment), {
             locale: "en",
             conversationId,
             paymentId,
         });
         dynamicPaymentId = result.paymentId;
+    }
+
+    // All verification passed — consume atomically. A replayed/raced callback
+    // gets zero rows here, which is what makes the donation write idempotent.
+    const consumed = await consumePendingDonation(conversationId);
+    if (!consumed?.[0]) {
+        const error = new Error("Donation session already processed");
+        error.statusCode = 400;
+        throw error;
     }
 
     // NATIVE REGULAR PERSISTENCE LAYER EXECUTION

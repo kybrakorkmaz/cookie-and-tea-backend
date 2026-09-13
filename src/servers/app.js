@@ -25,6 +25,11 @@ if (!ENV) {
     process.exit(1);
 }
 
+// Trust exactly ONE proxy hop (Vercel edge). Without this, req.ip is always the
+// proxy's address and every rate limiter bucket is shared by all users.
+// `1` (not `true`) so a spoofed X-Forwarded-For chain can't smuggle fake IPs.
+app.set("trust proxy", 1);
+
 // ALWAYS place CORS at the absolute top of your middleware stack!
 const corsOptions = {
     // development -> test -> production

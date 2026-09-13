@@ -71,7 +71,10 @@ export const pendingDonations = pgTable("pending_donations", {
     postId: integer("post_id").references(() => posts.id, { onDelete: "set null" }),
     expiresAt: timestamp("expires_at").notNull(),
     ...actionTimestamp(),
-});
+}, (table) => ({
+    // The daily purge sweeps WHERE expires_at < now()
+    expiresAtIdx: index("pending_donations_expires_at_idx").on(table.expiresAt),
+}));
 
 export const comments = pgTable("comments", {
     id: integer("id").primaryKey().generatedAlwaysAsIdentity(),

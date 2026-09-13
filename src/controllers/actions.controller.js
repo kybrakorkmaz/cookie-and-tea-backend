@@ -40,7 +40,11 @@ export const markActionReadController = async (req, res, next) =>{
 export const purgeExpiredReadsController = async (req, res, next) =>{
     try{
         const result = await purgeExpiredReads();
-        return res.status(200).json({ status: "success", deleted: result.length });
+        return res.status(200).json({
+            status: "success",
+            deleted: result.actions.length,
+            deletedPendingDonations: result.pendingDonations.length,
+        });
     }catch (e){
         next(e);
     }

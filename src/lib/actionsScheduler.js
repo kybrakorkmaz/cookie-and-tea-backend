@@ -6,9 +6,12 @@ const PURGE_INTERVAL_MS = 24 * 60 * 60 * 1000; // once a day
 
 const runPurge = async () => {
     try {
-        const deleted = await purgeExpiredReads();
-        if (deleted.length > 0) {
-            logger.info(`Purged ${deleted.length} expired action(s) (read for more than 14 days).`);
+        const { actions, pendingDonations } = await purgeExpiredReads();
+        if (actions.length > 0) {
+            logger.info(`Purged ${actions.length} expired action(s) (read for more than 14 days).`);
+        }
+        if (pendingDonations.length > 0) {
+            logger.info(`Purged ${pendingDonations.length} abandoned pending donation session(s).`);
         }
     } catch (error) {
         logger.error("Failed to purge expired actions", { error });
