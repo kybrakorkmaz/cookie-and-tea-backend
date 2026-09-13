@@ -14,6 +14,7 @@ import searchRouter from "../routes/search.route.js";
 
 import {errorHandler} from "../handlers/errorHandler.js";
 import cors from "cors";
+import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import {testInterceptorMiddleware} from "../middleware/testInterceptor.middleware.js";
 import {ENV} from "../../env.js";
@@ -40,6 +41,10 @@ const corsOptions = {
 
 // 1. CORS & Parsers
 app.use(cors(corsOptions));
+// Security headers. CSP and X-Frame-Options stay OFF: this API serves JSON,
+// and its only HTML responses are the iyzico 3DS callback pages — those must
+// stay frameable cross-origin and run an inline postMessage script.
+app.use(helmet({ contentSecurityPolicy: false, xFrameOptions: false }));
 app.use(cookieParser());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));

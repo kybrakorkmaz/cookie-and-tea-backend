@@ -14,6 +14,7 @@ import {
     controllerTipTea
 } from "../controllers/donation.controller.js";
 import { cardSchema, donationSchema, allDonationsSchema } from "../validations/donation.validation.js";
+import { donateLimiter } from "../middleware/rateLimit.middleware.js";
 
 const router = express.Router({ mergeParams: true });
 
@@ -34,14 +35,14 @@ router.get("/", validate(allDonationsSchema), controllerAllDonations);
 
 // Card Connection & Tipping Routes
 router.get("/card/status", controllerCardConnectionStatus);
-router.post("/card", validate(cardSchema), controllerSaveCard);
+router.post("/card", donateLimiter, validate(cardSchema), controllerSaveCard);
 router.get("/connect/status", controllerSubMerchantConnectionStatus);
-router.post("/connect", controllerConnectSubMerchant);
+router.post("/connect", donateLimiter, controllerConnectSubMerchant);
 router.get("/history", controllerDonationHistory);
 
 // Tier Tipping Routes
-router.post("/tip-tea", validate(donationSchema), controllerTipTea);
-router.post("/tip-cookie", validate(donationSchema), controllerTipCookie);
-router.post("/tip-cookie-tea", validate(donationSchema), controllerTipCookieTea);
+router.post("/tip-tea", donateLimiter, validate(donationSchema), controllerTipTea);
+router.post("/tip-cookie", donateLimiter, validate(donationSchema), controllerTipCookie);
+router.post("/tip-cookie-tea", donateLimiter, validate(donationSchema), controllerTipCookieTea);
 
 export default router;

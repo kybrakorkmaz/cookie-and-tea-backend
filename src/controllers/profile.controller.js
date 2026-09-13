@@ -89,6 +89,14 @@ export const getUserIntro = async (req, res, next) => {
 
 export const getUserEarnedMoney = async (req, res, next) =>{
     try{
+        // Earnings are private financial data — only the owner may read them,
+        // regardless of whose :username profile is being viewed
+        if (req.user.id !== req.resolvedUser.id) {
+            const error = new Error("Forbidden: earnings are private to the profile owner");
+            error.statusCode = 403;
+            throw error;
+        }
+
         const user = req.resolvedUser;
         const {earningTimeline} = req.query; // Expects "30", "90", or "365"
 

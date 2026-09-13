@@ -6,12 +6,14 @@ import { emailSchema } from "../validations/auth.validation.js";
 import {hashPassword, verifyPassword} from "../utils/password.util.js";
 import { logger } from "../lib/logger.js";
 
-const generateToken = async (payload) => {
+// audience separates token purposes: sessions ("cat-app-users") vs email
+// verification ("cat-app-email") — one can never be replayed as the other
+const generateToken = async (payload, audience = "cat-app-users") => {
     const jwtSecret = ENV.JWT_SECRET;
     const claims = {
         expiresIn: "1d",
         issuer: "cat-app",
-        audience: "cat-app-users"
+        audience
     };
     return jwt.sign(payload, jwtSecret, claims);
 }
@@ -70,7 +72,7 @@ export const verifyUserToken = async (token) => {
     try {
         const decoded = jwt.verify(token, ENV.JWT_SECRET, {
             issuer: "cat-app",
-            audience: "cat-app-users"
+            audience: "cat-app-email"
         });
 
         const updatedUser = await updateUserStatus(decoded.userId, "active");
@@ -143,7 +145,7 @@ export const registerNewUser = async (name, username, email, password, bypassVer
 
         // --- Standard Real Flow (Consumes Mailtrap Credits) ---
         const payload = { userId: newUser.id, email: newUser.email };
-        const token = await generateToken(payload);
+        const token = await generateToken(payload, "cat-app-email");
         const verificationUrl = `${ENV.BASE_URL}/api/v1/auth/verify-email?token=${token}`;
 
         // SERVERLESS NOTE: this MUST be awaited. On Vercel the function instance

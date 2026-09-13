@@ -31,7 +31,7 @@ export const generateTestAuthCookie = (userId, username, email) => {
     const token = jwt.sign(
         { userId, username, email },
         ENV.JWT_SECRET,
-        { expiresIn: "1h" }
+        { expiresIn: "1h", issuer: "cat-app", audience: "cat-app-users" }
     );
     // Return it formatted exactly how standard HTTP headers expect cookies
     return `token=${token}`;

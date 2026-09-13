@@ -9,8 +9,32 @@ import {
     getDonationsByUser,
     updateUserSubMerchantKey,
     updateUserCard, getDonationsByPostId,
+    insertPendingDonation,
+    consumePendingDonation,
+    deletePendingDonation,
 } from "../repositories/donation.repository.js";
+import { getPostById } from "../repositories/post.repository.js";
 import { notifyDonation } from "./actions.service.js";
+
+// Single source for the mock flag (declared in env.js schema; raw process.env
+// reads removed so the flag can't smuggle in undeclared)
+const isMockIyzico = () => ENV.MOCK_IYZICO === "true";
+
+// Pending 3DS sessions live 15 minutes — plenty for a bank redirect round-trip
+const PENDING_DONATION_TTL_MS = 15 * 60 * 1000;
+
+// In mock mode there is no iyzico server-side verification, so the mock 3DS
+// page carries an HMAC signature of the conversationId. Without the server
+// secret a callback can't be forged — even in demo mode.
+const signMockCallback = (conversationId) =>
+    crypto.createHmac("sha256", ENV.JWT_SECRET).update(conversationId).digest("hex");
+
+const isValidMockCallback = (conversationId, mockToken) => {
+    const expected = signMockCallback(conversationId);
+    const provided = String(mockToken || "");
+    return provided.length === expected.length
+        && crypto.timingSafeEqual(Buffer.from(provided), Buffer.from(expected));
+};
 
 export const findDonations = async (postId, limit, offset) => {
     if (!postId) {
@@ -36,8 +60,6 @@ export const findDonations = async (postId, limit, offset) => {
         status: "paid",
     }));
 };
-
-const pendingDonations = new Map();
 
 const promisify = (fn, request) =>
     new Promise((resolve, reject) => {
@@ -72,6 +94,7 @@ const parseContactNames = (fullName, fallback) => {
 
 // HTML generator simulating Iyzico 3D Secure UI.
 // It posts urlencoded data to the production callback endpoint.
+// The HMAC mockToken makes the simulated callback unforgeable without the server secret.
 const generateMock3DPage = (conversationId, amount, recipientName) => {
     const html = `<!DOCTYPE html>
     <html>
@@ -99,6 +122,7 @@ const generateMock3DPage = (conversationId, amount, recipientName) => {
             <input type="hidden" name="status" value="success">
             <input type="hidden" name="mdStatus" value="1">
             <input type="hidden" name="paymentId" value="mock_payment_${Date.now()}">
+            <input type="hidden" name="mockToken" value="${signMockCallback(conversationId)}">
             <button type="submit" class="btn">Confirm Simulation Payment</button>
         </form>
     </body>
@@ -145,7 +169,7 @@ export const initiateSubMerchantOnboarding = async (userId, merchantDetails = {}
         validationError.statusCode = 400;
         throw validationError;
     }
-    if (process.env.MOCK_IYZICO === "true" || ENV.MOCK_IYZICO === "true") {
+    if (isMockIyzico()) {
         const mockSubMerchantKey = `mock_submerchant_${userId}_${Date.now()}`;
         await updateUserSubMerchantKey(userId, mockSubMerchantKey);
         return { subMerchantKey: mockSubMerchantKey, note: "Development Mode Bypass" };
@@ -202,23 +226,36 @@ export const processDonation = async (donatorId, recipientUsername, amountInDoll
         throw error;
     }
 
+    // A tip attached to a post must belong to the recipient — otherwise a
+    // donor could inflate an arbitrary post's donation counter
+    if (postId) {
+        const postResult = await getPostById(postId);
+        const post = postResult?.[0];
+        if (!post || post.userId !== recipient.id) {
+            const error = new Error("Post does not belong to the donation recipient");
+            error.statusCode = 400;
+            throw error;
+        }
+    }
+
     const amountInCents = Math.round(amountInDollars * 100);
     const conversationId = crypto.randomUUID();
     const formattedPrice = amountInDollars.toFixed(2);
     const recipientName = recipient.name || recipient.username;
 
-    // Save state to short-lived map for verification during callback stage
-    pendingDonations.set(conversationId, {
+    // Persist the 3DS session — DB-backed so the callback works across
+    // serverless instances (the old in-memory Map did not)
+    await insertPendingDonation({
+        conversationId,
         donatorId,
-        recipientId: recipient.id,
-        amountInCents,
-        amountInDollars,
-        recipientName,
+        receiverId: recipient.id,
+        amount: amountInCents,
         postId: postId || null,
+        expiresAt: new Date(Date.now() + PENDING_DONATION_TTL_MS),
     });
 
-    // CRITICAL BYPASS CHECK FOR PORTFOLIO PROJECT
-    if (process.env.MOCK_IYZICO === "true" || ENV.MOCK_IYZICO === "true") {
+    // Portfolio demo path — simulated gateway, HMAC-signed callback
+    if (isMockIyzico()) {
         return {
             success: true,
             requires3ds: true,
@@ -248,7 +285,7 @@ export const processDonation = async (donatorId, recipientUsername, amountInDoll
         const result = await promisify(iyzico.threedsInitialize.create.bind(iyzico.threedsInitialize), request);
         return { success: true, requires3ds: true, conversationId, htmlContent: result.threeDSHtmlContent };
     } catch (error) {
-        pendingDonations.delete(conversationId);
+        await deletePendingDonation(conversationId);
         const err = new Error(`Payment initialization failed: ${error.message}`);
         err.statusCode = error.statusCode || 400;
         throw err;
@@ -256,15 +293,22 @@ export const processDonation = async (donatorId, recipientUsername, amountInDoll
 };
 
 export const completeDonation = async (callbackBody) => {
-    const { conversationId, status, mdStatus, paymentId } = callbackBody;
+    const { conversationId, status, mdStatus, paymentId, mockToken } = callbackBody;
 
-    const pending = pendingDonations.get(conversationId);
+    // Atomic one-time consume — a replayed or raced callback gets nothing
+    const consumed = await consumePendingDonation(conversationId);
+    const pending = consumed?.[0];
     if (!pending) {
         const error = new Error("Unknown or expired donation session");
         error.statusCode = 400;
         throw error;
     }
-    pendingDonations.delete(conversationId);
+
+    if (new Date(pending.expiresAt).getTime() < Date.now()) {
+        const error = new Error("Donation session expired. Please try again.");
+        error.statusCode = 400;
+        throw error;
+    }
 
     if (status !== "success" || !["1", "2", "3", "4"].includes(String(mdStatus))) {
         const error = new Error("3D Secure confirmation failed or was declined");
@@ -274,9 +318,15 @@ export const completeDonation = async (callbackBody) => {
 
     let dynamicPaymentId = paymentId;
 
-    // CRITICAL BYPASS CHECK FOR PORTFOLIO PROJECT
-    // Skip external API charge call if mock environment configuration is active
-    if (process.env.MOCK_IYZICO !== "true" && ENV.MOCK_IYZICO !== "true") {
+    if (isMockIyzico()) {
+        // No iyzico server-side verification exists in mock mode — the HMAC
+        // signature embedded in the generated mock page is the proof of origin
+        if (!isValidMockCallback(conversationId, mockToken)) {
+            const error = new Error("Invalid payment confirmation signature");
+            error.statusCode = 400;
+            throw error;
+        }
+    } else {
         const result = await promisify(iyzico.threedsPayment.create.bind(iyzico.threedsPayment), {
             locale: "en",
             conversationId,
@@ -290,25 +340,27 @@ export const completeDonation = async (callbackBody) => {
     // Also increments the post's donation_sum counter (if the donation is tied to a post)
     const donation = await createDonation(
         pending.donatorId,
-        pending.recipientId,
-        pending.amountInCents,
+        pending.receiverId,
+        pending.amount,
         pending.postId
     );
 
     // Triggers notification signals natively so it shows up immediately for the recipient
     await notifyDonation({
         actorId: pending.donatorId,
-        targetUserId: pending.recipientId,
-        amount: pending.amountInCents,
+        targetUserId: pending.receiverId,
+        amount: pending.amount,
         postId: pending.postId,
     });
+
+    const recipient = await getExistingUserOrThrow(pending.receiverId, "Recipient user not found");
 
     return {
         success: true,
         donation: donation[0],
         paymentId: dynamicPaymentId,
-        amount: pending.amountInDollars,
-        recipient: pending.recipientName,
+        amount: pending.amount / 100,
+        recipient: recipient.name || recipient.username,
     };
 };
 

@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "@jest/globals";
+import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import request from "supertest";
 import { eq } from "drizzle-orm";
@@ -12,7 +13,7 @@ const signToken = (user) =>
     jwt.sign(
         { userId: user.id, username: user.username, email: user.email },
         ENV.JWT_SECRET,
-        { expiresIn: "1h" }
+        { expiresIn: "1h", issuer: "cat-app", audience: "cat-app-users" }
     );
 
 describe("Donation Integration Tests", () => {
@@ -246,9 +247,16 @@ describe("Donation Integration Tests", () => {
 
             const { conversationId } = initiateResponse.body.data;
 
+            // Mock-mode callbacks must carry the HMAC signature the server
+            // embedded in the generated mock 3DS page — simulate that here
+            const mockToken = crypto
+                .createHmac("sha256", ENV.JWT_SECRET)
+                .update(conversationId)
+                .digest("hex");
+
             const callbackResponse = await request(app)
                 .post("/api/v1/donate/callback")
-                .send({ conversationId, status: "success", mdStatus: "1", paymentId: "payment_test_mock" });
+                .send({ conversationId, status: "success", mdStatus: "1", paymentId: "payment_test_mock", mockToken });
 
             expect(callbackResponse.status).toBe(200);
             expect(callbackResponse.text).toContain("iyzico-donation-result");
@@ -269,6 +277,35 @@ describe("Donation Integration Tests", () => {
             expect(response.status).toBe(400);
             expect(response.text).toContain("\"success\":false");
         });
+
+        it("rejects a forged mock callback without a valid mockToken", async () => {
+            // Start a real tip so a valid pending session exists
+            const initiateResponse = await request(app)
+                .post("/api/v1/donate/tip-tea")
+                .set("Cookie", [`token=${donatorToken}`])
+                .send({ recipientUsername: recipient.username });
+
+            const { conversationId } = initiateResponse.body.data;
+
+            const countBefore = (await db
+                .select()
+                .from(donations)
+                .where(eq(donations.receiverId, recipient.id))).length;
+
+            // Attack: replay the callback with a guessed/missing signature
+            const forged = await request(app)
+                .post("/api/v1/donate/callback")
+                .send({ conversationId, status: "success", mdStatus: "1", paymentId: "forged" });
+
+            expect(forged.status).toBe(400);
+
+            // The forged callback must not record a donation
+            const countAfter = (await db
+                .select()
+                .from(donations)
+                .where(eq(donations.receiverId, recipient.id))).length;
+            expect(countAfter).toBe(countBefore);
+        });
     });
 
     describe("GET /api/v1/donate/history", () => {
@@ -278,13 +315,20 @@ describe("Donation Integration Tests", () => {
                 .set("Cookie", [`token=${donatorToken}`])
                 .send({ recipientUsername: recipient.username });
 
+            const historyConversationId = initiateResponse.body.data.conversationId;
+            const historyMockToken = crypto
+                .createHmac("sha256", ENV.JWT_SECRET)
+                .update(historyConversationId)
+                .digest("hex");
+
             await request(app)
                 .post("/api/v1/donate/callback")
                 .send({
-                    conversationId: initiateResponse.body.data.conversationId,
+                    conversationId: historyConversationId,
                     status: "success",
                     mdStatus: "1",
                     paymentId: "payment_test_mock",
+                    mockToken: historyMockToken,
                 });
 
             const response = await request(app)

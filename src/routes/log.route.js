@@ -1,5 +1,6 @@
 import express from "express";
 import { logger } from "../lib/logger.js";
+import { logLimiter } from "../middleware/rateLimit.middleware.js";
 
 const router = express.Router();
 
@@ -10,7 +11,7 @@ const ALLOWED_LEVELS = new Set(["error", "warn", "info"]);
 // surface in Vercel Runtime Logs alongside API logs. Open by design (login and
 // env failures happen pre-auth) but sanitized: fixed level set, truncated
 // message, nothing persisted beyond the log stream.
-router.post("/client", (req, res) => {
+router.post("/client", logLimiter, (req, res) => {
     const { level, message, meta } = req.body ?? {};
 
     const safeMessage = String(message ?? "").slice(0, 500);

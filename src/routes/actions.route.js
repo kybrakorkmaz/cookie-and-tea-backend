@@ -4,7 +4,6 @@ import { resolveUserById } from "../middleware/resolveUser.js";
 import {
     getActionsController,
     markActionReadController,
-    purgeExpiredReadsController,
     deleteActionController,
 } from "../controllers/actions.controller.js";
 
@@ -24,6 +23,7 @@ router.put("/:id/read", markActionReadController);
 // This only removes the notification entry, the underlying transaction (e.g. donation) is preserved.
 router.delete("/:id", deleteActionController);
 
-router.post("/purge-expired", purgeExpiredReadsController);
+// NOTE: global purge lives ONLY on /api/v1/cron/purge-actions behind CRON_SECRET —
+// it must not be triggerable by any authenticated user here.
 
 export default router;

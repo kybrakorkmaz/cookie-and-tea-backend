@@ -55,6 +55,24 @@ export const donations = pgTable("donations", {
     amountCheckConstraint: check("amount_non_negative", sql`amount >= 0`),
 }));
 
+// PENDING DONATIONS: server-side 3DS session state. Replaces the old in-memory
+// Map, which broke across serverless instances (tip-init on one instance,
+// callback on another → "Unknown or expired donation session"). One-time use
+// (consumed on callback), short TTL.
+export const pendingDonations = pgTable("pending_donations", {
+    conversationId: text("conversation_id").primaryKey(),
+    donatorId: integer("donator_id")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
+    receiverId: integer("receiver_id")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
+    amount: integer("amount").notNull(), // cents
+    postId: integer("post_id").references(() => posts.id, { onDelete: "set null" }),
+    expiresAt: timestamp("expires_at").notNull(),
+    ...actionTimestamp(),
+});
+
 export const comments = pgTable("comments", {
     id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
     postId: integer("post_id")
