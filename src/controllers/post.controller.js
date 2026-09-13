@@ -8,10 +8,22 @@ export const updatePostController = async (req, res, next) => {
         const postId = parseInt(req.params.postId, 10);
         const userId = req.user.id;
 
+        // Authorize BEFORE any Cloudinary upload: an unauthorized request must
+        // never push files into our storage. The service layer still re-checks
+        // ownership as a backstop — this just fails fast.
+        const post = await findPost(postId);
+        if (post.userId !== userId) {
+            const error = new Error("Forbidden: You do not own this post");
+            error.statusCode = 403;
+            throw error;
+        }
+
         const { header, content, existingImages, existingVideos } = req.body;
 
-        // Move the parsing logic to a helper file or just keep it clean
-        const parseMedia = (data) => (Array.isArray(data) ? data : (data ? [data] : []));
+        // Normalize single-entry strings to arrays, and drop any blob: URLs —
+        // those are client-side preview artifacts, never real retained media
+        const parseMedia = (data) => (Array.isArray(data) ? data : (data ? [data] : []))
+            .filter(url => typeof url === "string" && !url.startsWith("blob:"));
 
         const finalImages = parseMedia(existingImages);
         const finalVideos = parseMedia(existingVideos);
@@ -23,11 +35,27 @@ export const updatePostController = async (req, res, next) => {
             }
         }
 
-        // SERVICE LAYER SHOULD HANDLE AUTHORIZATION
-        // The service should check if the post belongs to userId and throw a 403 if not.
+        // Process new video uploads (mirrors the images pipeline)
+        if (req.files?.videos) {
+            for (const file of req.files.videos) {
+                finalVideos.push(await uploadToCloudinary(file.buffer, "video"));
+            }
+        }
+
+        // Derive the type server-side from the final media state — never trust the
+        // client's `type` field (a text post gaining an image must become "image")
+        const derivedType =
+            finalImages.length > 0 && finalVideos.length > 0 ? "hybrid"
+                : finalImages.length > 0 ? "image"
+                : finalVideos.length > 0 ? "video"
+                : "text";
+
+        // Ownership already verified above; updatePost re-checks it in the service
+        // layer as a backstop and throws 403 if the post isn't the user's.
         const updatedPost = await updatePost(userId, postId, {
             header,
             content,
+            type: derivedType,
             images: finalImages,
             videos: finalVideos
         });

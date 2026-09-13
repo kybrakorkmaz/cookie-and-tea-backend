@@ -100,4 +100,73 @@ describe("Profile Integration Suite with Live Test DB", ()=>{
             expect(response.body.recentConnections[0].username).toBe(`test_follower_${uniqueId}`);
         });
     });
+
+    // --- TEST SUITE FOR INTRO UPDATES (about / socials) ---
+    describe("PUT /api/v1/profile/:username/intro/about", () => {
+        it("should update the about text on the own profile", async () => {
+            const response = await authedAgent
+                .put(`/api/v1/profile/${testUser.username}/intro/about`)
+                .send({ about: "Updated bio text" });
+
+            expect(response.status).toBe(200);
+            expect(response.body.status).toBe("success");
+            expect(response.body.about).toBe("Updated bio text");
+
+            // Assert database mutation directly
+            const [dbUser] = await db.select().from(users).where(eq(users.id, testUser.id)).limit(1);
+            expect(dbUser.about).toBe("Updated bio text");
+        });
+
+        it("should return 403 when editing someone else's about", async () => {
+            const response = await authedAgent
+                .put(`/api/v1/profile/${testFollower.username}/intro/about`)
+                .send({ about: "Hacked bio" });
+
+            expect(response.status).toBe(403);
+        });
+
+        it("should return 401 when unauthenticated", async () => {
+            const response = await request(app)
+                .put(`/api/v1/profile/${testUser.username}/intro/about`)
+                .send({ about: "No session bio" });
+
+            expect(response.status).toBe(401);
+        });
+    });
+
+    describe("PUT /api/v1/profile/:username/intro/socials", () => {
+        it("should replace the socials list on the own profile", async () => {
+            const response = await authedAgent
+                .put(`/api/v1/profile/${testUser.username}/intro/socials`)
+                .send({
+                    socials: [
+                        { socialMedia: "youtube", socialUrl: "https://youtube.com/@updated" },
+                        { socialMedia: "instagram", socialUrl: "https://instagram.com/updated" }
+                    ]
+                });
+
+            expect(response.status).toBe(200);
+            expect(response.body.status).toBe("success");
+            expect(Array.isArray(response.body.socials)).toBe(true);
+
+            const dbSocials = await db.select().from(socials).where(eq(socials.userId, testUser.id));
+            expect(dbSocials.length).toBe(2);
+        });
+
+        it("should reject an unsupported platform with 400", async () => {
+            const response = await authedAgent
+                .put(`/api/v1/profile/${testUser.username}/intro/socials`)
+                .send({ socials: [{ socialMedia: "myspace", socialUrl: "https://myspace.com/x" }] });
+
+            expect(response.status).toBe(400);
+        });
+
+        it("should return 403 when editing someone else's socials", async () => {
+            const response = await authedAgent
+                .put(`/api/v1/profile/${testFollower.username}/intro/socials`)
+                .send({ socials: [{ socialMedia: "youtube", socialUrl: "https://youtube.com/@hack" }] });
+
+            expect(response.status).toBe(403);
+        });
+    });
 })

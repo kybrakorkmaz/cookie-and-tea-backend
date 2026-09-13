@@ -130,6 +130,72 @@ describe("Posts Integration Suite", () => {
             expect(response.body.data.header).toBe("New Header");
             expect(response.body.data.content).toBe("New Detail");
         });
+
+        it("should derive type 'image' when a text post gains a retained image", async () => {
+            const textPost = await generateTestPost(testUser.id); // type: "text"
+
+            const response = await request(app)
+                .put(`/api/v1/feed/${testUser.username}/posts/${textPost.id}`)
+                .set("Cookie", [`token=${authToken}`])
+                .send({
+                    header: textPost.header,
+                    content: textPost.content,
+                    // Conflicting client value — the server must ignore it and
+                    // derive the type from the final media instead
+                    type: "text",
+                    existingImages: ["https://res.cloudinary.com/mock-cloud/image/upload/kept.png"]
+                });
+
+            expect(response.status).toBe(200);
+            // Server derives type from final media — the client-sent type is never trusted
+            expect(response.body.data.type).toBe("image");
+            expect(response.body.data.images).toEqual(["https://res.cloudinary.com/mock-cloud/image/upload/kept.png"]);
+        });
+
+        it("should strip blob: preview URLs from retained media", async () => {
+            const textPost = await generateTestPost(testUser.id);
+
+            const response = await request(app)
+                .put(`/api/v1/feed/${testUser.username}/posts/${textPost.id}`)
+                .set("Cookie", [`token=${authToken}`])
+                .send({
+                    header: textPost.header,
+                    content: textPost.content,
+                    existingImages: [
+                        "https://res.cloudinary.com/mock-cloud/image/upload/real.png",
+                        "blob:http://localhost:5173/dead-preview-url"
+                    ]
+                });
+
+            expect(response.status).toBe(200);
+            // blob: URLs are client-side preview artifacts — never persisted
+            expect(response.body.data.images).toEqual(["https://res.cloudinary.com/mock-cloud/image/upload/real.png"]);
+            expect(response.body.data.type).toBe("image");
+        });
+
+        it("should derive type 'text' when all media is removed", async () => {
+            const textPost = await generateTestPost(testUser.id);
+
+            // First give the post an image — assert the setup actually worked,
+            // otherwise the removal assertions below prove nothing
+            const setupResponse = await request(app)
+                .put(`/api/v1/feed/${testUser.username}/posts/${textPost.id}`)
+                .set("Cookie", [`token=${authToken}`])
+                .send({ existingImages: ["https://res.cloudinary.com/mock-cloud/image/upload/x.png"] });
+
+            expect(setupResponse.status).toBe(200);
+            expect(setupResponse.body.data.images).toEqual(["https://res.cloudinary.com/mock-cloud/image/upload/x.png"]);
+
+            // Then remove all media
+            const response = await request(app)
+                .put(`/api/v1/feed/${testUser.username}/posts/${textPost.id}`)
+                .set("Cookie", [`token=${authToken}`])
+                .send({ header: "Only text now", content: "no media", existingImages: [] });
+
+            expect(response.status).toBe(200);
+            expect(response.body.data.type).toBe("text");
+            expect(response.body.data.images).toEqual([]);
+        });
     });
 
     describe("DELETE /api/v1/feed/:username/posts/:id", () => {
