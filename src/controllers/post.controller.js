@@ -10,8 +10,10 @@ export const updatePostController = async (req, res, next) => {
 
         const { header, content, existingImages, existingVideos } = req.body;
 
-        // Move the parsing logic to a helper file or just keep it clean
-        const parseMedia = (data) => (Array.isArray(data) ? data : (data ? [data] : []));
+        // Normalize single-entry strings to arrays, and drop any blob: URLs —
+        // those are client-side preview artifacts, never real retained media
+        const parseMedia = (data) => (Array.isArray(data) ? data : (data ? [data] : []))
+            .filter(url => typeof url === "string" && !url.startsWith("blob:"));
 
         const finalImages = parseMedia(existingImages);
         const finalVideos = parseMedia(existingVideos);
@@ -23,11 +25,27 @@ export const updatePostController = async (req, res, next) => {
             }
         }
 
+        // Process new video uploads (mirrors the images pipeline)
+        if (req.files?.videos) {
+            for (const file of req.files.videos) {
+                finalVideos.push(await uploadToCloudinary(file.buffer, "video"));
+            }
+        }
+
+        // Derive the type server-side from the final media state — never trust the
+        // client's `type` field (a text post gaining an image must become "image")
+        const derivedType =
+            finalImages.length > 0 && finalVideos.length > 0 ? "hybrid"
+                : finalImages.length > 0 ? "image"
+                : finalVideos.length > 0 ? "video"
+                : "text";
+
         // SERVICE LAYER SHOULD HANDLE AUTHORIZATION
         // The service should check if the post belongs to userId and throw a 403 if not.
         const updatedPost = await updatePost(userId, postId, {
             header,
             content,
+            type: derivedType,
             images: finalImages,
             videos: finalVideos
         });
