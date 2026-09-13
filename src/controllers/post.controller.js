@@ -8,6 +8,16 @@ export const updatePostController = async (req, res, next) => {
         const postId = parseInt(req.params.postId, 10);
         const userId = req.user.id;
 
+        // Authorize BEFORE any Cloudinary upload: an unauthorized request must
+        // never push files into our storage. The service layer still re-checks
+        // ownership as a backstop — this just fails fast.
+        const post = await findPost(postId);
+        if (post.userId !== userId) {
+            const error = new Error("Forbidden: You do not own this post");
+            error.statusCode = 403;
+            throw error;
+        }
+
         const { header, content, existingImages, existingVideos } = req.body;
 
         // Normalize single-entry strings to arrays, and drop any blob: URLs —
@@ -40,8 +50,8 @@ export const updatePostController = async (req, res, next) => {
                 : finalVideos.length > 0 ? "video"
                 : "text";
 
-        // SERVICE LAYER SHOULD HANDLE AUTHORIZATION
-        // The service should check if the post belongs to userId and throw a 403 if not.
+        // Ownership already verified above; updatePost re-checks it in the service
+        // layer as a backstop and throws 403 if the post isn't the user's.
         const updatedPost = await updatePost(userId, postId, {
             header,
             content,

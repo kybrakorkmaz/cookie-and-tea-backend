@@ -140,6 +140,9 @@ describe("Posts Integration Suite", () => {
                 .send({
                     header: textPost.header,
                     content: textPost.content,
+                    // Conflicting client value — the server must ignore it and
+                    // derive the type from the final media instead
+                    type: "text",
                     existingImages: ["https://res.cloudinary.com/mock-cloud/image/upload/kept.png"]
                 });
 
@@ -173,11 +176,15 @@ describe("Posts Integration Suite", () => {
         it("should derive type 'text' when all media is removed", async () => {
             const textPost = await generateTestPost(testUser.id);
 
-            // First give the post an image
-            await request(app)
+            // First give the post an image — assert the setup actually worked,
+            // otherwise the removal assertions below prove nothing
+            const setupResponse = await request(app)
                 .put(`/api/v1/feed/${testUser.username}/posts/${textPost.id}`)
                 .set("Cookie", [`token=${authToken}`])
                 .send({ existingImages: ["https://res.cloudinary.com/mock-cloud/image/upload/x.png"] });
+
+            expect(setupResponse.status).toBe(200);
+            expect(setupResponse.body.data.images).toEqual(["https://res.cloudinary.com/mock-cloud/image/upload/x.png"]);
 
             // Then remove all media
             const response = await request(app)
