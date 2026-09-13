@@ -106,7 +106,7 @@ describe("Auth User Integration Suit with Live Test DB", () =>{
             const mockToken = jwt.sign(
                 { userId: seededUser.id, email: seededUser.email },
                 ENV.JWT_SECRET,
-                { expiresIn: "1d", issuer: "cat-app", audience: "cat-app-users" }
+                { expiresIn: "1d", issuer: "cat-app", audience: "cat-app-email" }
             );
 
             // Act: send the verification query token via query parameters

@@ -1,0 +1,1 @@
+CREATE INDEX "pending_donations_expires_at_idx" ON "pending_donations" USING btree ("expires_at");

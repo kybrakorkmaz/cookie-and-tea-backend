@@ -4,7 +4,10 @@ import {addNewPost, getFeedTimeline} from "../services/feed.service.js";
 import {uploadToCloudinary} from "../config/cloudinary.js";
 export const getFeedTimelineController = async (req, res, next) =>{
     try {
-        const user = req.resolvedUser;
+        // IDOR fix: the timeline is "posts from people the VIEWER follows", so it
+        // must be bound to the JWT identity — not the :username path param
+        // (resolveGlobalUsername would otherwise let anyone read another user's feed)
+        const user = req.user;
 
         const limit = parseInt(req.query.limit, 10) || 5;
         const offset = parseInt(req.query.offset, 10) || 0;

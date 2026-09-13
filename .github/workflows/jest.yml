@@ -58,6 +58,7 @@ jobs:
           FROM_NAME=Cookie & Tea CI
           FROM_EMAIL=noreply@cookieandtea.com
           BYPASS_SECRET=ci_jest_bypass_secret
+          CRON_SECRET=ci_jest_cron_secret
           FRONTEND_ORIGIN=http://localhost:5173
           CLOUDINARY_CLOUD_NAME=ci_dummy
           CLOUDINARY_API_KEY=ci_dummy

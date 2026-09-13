@@ -1,6 +1,6 @@
 import { db } from "../db/client.js";
-import { donations, posts, users } from "../db/schema/index.js";
-import { desc, eq, sql } from "drizzle-orm";
+import { donations, pendingDonations, posts, users } from "../db/schema/index.js";
+import { desc, eq, lt, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
 export const createDonation = async (donatorId, receiverId, amount, postId = null) => {
@@ -21,6 +21,46 @@ export const createDonation = async (donatorId, receiverId, amount, postId = nul
 
         return donation;
     });
+};
+
+// --- Pending donation sessions (3DS state, DB-backed so it survives serverless) ---
+
+export const insertPendingDonation = async ({ conversationId, donatorId, receiverId, amount, postId, expiresAt }) => {
+    return db.insert(pendingDonations).values({
+        conversationId,
+        donatorId,
+        receiverId,
+        amount,
+        postId,
+        expiresAt,
+    });
+};
+
+export const getPendingDonation = async (conversationId) => {
+    return db.select()
+        .from(pendingDonations)
+        .where(eq(pendingDonations.conversationId, conversationId));
+};
+
+// One-time use: DELETE ... RETURNING is atomic — a replayed/raced callback gets
+// zero rows back and is rejected by the service layer.
+export const consumePendingDonation = async (conversationId) => {
+    return db.delete(pendingDonations)
+        .where(eq(pendingDonations.conversationId, conversationId))
+        .returning();
+};
+
+export const deletePendingDonation = async (conversationId) => {
+    return db.delete(pendingDonations)
+        .where(eq(pendingDonations.conversationId, conversationId));
+};
+
+// Maintenance sweep for abandoned sessions (user closed the 3DS tab etc.) —
+// called by the daily scheduler and the /cron/purge-actions endpoint
+export const deleteExpiredPendingDonations = async () => {
+    return db.delete(pendingDonations)
+        .where(lt(pendingDonations.expiresAt, new Date()))
+        .returning({ conversationId: pendingDonations.conversationId });
 };
 
 export const getDonationsByPostId = async (postId, limit, offset) => {

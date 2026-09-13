@@ -7,9 +7,11 @@ if (!process.env.IN_DOCKER && !process.env.DATABASE_URL) {
 }
 
 const envSchema = z.object({
+    // No default on purpose: a deploy that forgets NODE_ENV must fail loudly
+    // at boot — not silently run as "development" and leak stack traces
+    // (errorHandler gates the stack field on NODE_ENV === "development").
     NODE_ENV: z
-        .enum(["development", "production", "test"])
-        .default("development"),
+        .enum(["development", "production", "test"]),
     PORT: z
         .coerce.number().int()
         .min(1, { message: "Port must be >= 1" })
@@ -58,7 +60,15 @@ const envSchema = z.object({
     IYZICO_API_KEY: z.string().min(1, { message: "IYZICO_API_KEY is required" }),
     IYZICO_SECRET_KEY: z.string().min(1, { message: "IYZICO_SECRET_KEY is required" }),
     IYZICO_BASE_URL: z.string().default("https://sandbox-api.iyzipay.com"),
+
+    // Portfolio demo flag: "true" simulates iyzico calls (no real charge).
+    // Declared here so zod doesn't strip it — raw process.env reads removed.
+    MOCK_IYZICO: z.enum(["true", "false"]).default("false"),
 });
 
 // Parse and export
 export const ENV = envSchema.parse(process.env);
+
+if (ENV.NODE_ENV === "production" && ENV.MOCK_IYZICO === "true") {
+    console.warn("⚠️  MOCK_IYZICO=true in PRODUCTION — donations are simulated and no money moves. Unset it for real payments.");
+}

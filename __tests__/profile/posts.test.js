@@ -20,7 +20,7 @@ describe("Profile Posts Integration Suite", () => {
         authToken = jwt.sign(
             { userId: testUser.id, username: testUser.username },
             ENV.JWT_SECRET,
-            { expiresIn: "1d" }
+            { expiresIn: "1d", issuer: "cat-app", audience: "cat-app-users" }
         );
     });
 

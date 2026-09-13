@@ -11,7 +11,7 @@ const signToken = (user) =>
     jwt.sign(
         { userId: user.id, username: user.username, email: user.email },
         ENV.JWT_SECRET,
-        { expiresIn: "1d" }
+        { expiresIn: "1d", issuer: "cat-app", audience: "cat-app-users" }
     );
 
 describe("Actions (Notifications) Integration", () => {
@@ -145,9 +145,12 @@ describe("Actions (Notifications) Integration", () => {
             readAt: oldDate,
         });
 
+        // Global purge lives on the cron route behind CRON_SECRET — the
+        // user-facing /actions/purge-expired endpoint was removed (any
+        // authenticated user could trigger a global delete)
         const purgeResponse = await request(app)
-            .post("/api/v1/actions/purge-expired")
-            .set("Cookie", [`token=${authTokenB}`]);
+            .get("/api/v1/cron/purge-actions")
+            .set("Authorization", `Bearer ${ENV.CRON_SECRET}`);
 
         expect(purgeResponse.status).toBe(200);
         expect(purgeResponse.body.status).toBe("success");

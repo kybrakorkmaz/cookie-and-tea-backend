@@ -14,6 +14,7 @@ import searchRouter from "../routes/search.route.js";
 
 import {errorHandler} from "../handlers/errorHandler.js";
 import cors from "cors";
+import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import {testInterceptorMiddleware} from "../middleware/testInterceptor.middleware.js";
 import {ENV} from "../../env.js";
@@ -23,6 +24,11 @@ if (!ENV) {
     console.error("CRITICAL ERROR: ENV object is undefined! Check your import path in app.js.");
     process.exit(1);
 }
+
+// Trust exactly ONE proxy hop (Vercel edge). Without this, req.ip is always the
+// proxy's address and every rate limiter bucket is shared by all users.
+// `1` (not `true`) so a spoofed X-Forwarded-For chain can't smuggle fake IPs.
+app.set("trust proxy", 1);
 
 // ALWAYS place CORS at the absolute top of your middleware stack!
 const corsOptions = {
@@ -40,6 +46,10 @@ const corsOptions = {
 
 // 1. CORS & Parsers
 app.use(cors(corsOptions));
+// Security headers. CSP and X-Frame-Options stay OFF: this API serves JSON,
+// and its only HTML responses are the iyzico 3DS callback pages — those must
+// stay frameable cross-origin and run an inline postMessage script.
+app.use(helmet({ contentSecurityPolicy: false, xFrameOptions: false }));
 app.use(cookieParser());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));

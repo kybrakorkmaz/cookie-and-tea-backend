@@ -25,8 +25,12 @@ export const authenticateToken = (req, res, next) => {
             return next(error);
         }
 
-        // 3. Verify the token
-        jwt.verify(token, ENV.JWT_SECRET, (err, decodedPayload) => {
+        // 3. Verify the token — issuer/audience bind it to session use, so
+        // email-verification tokens (different audience) can't act as sessions
+        jwt.verify(token, ENV.JWT_SECRET, {
+            issuer: "cat-app",
+            audience: "cat-app-users"
+        }, (err, decodedPayload) => {
             if (err) {
                 const message = err.name === "TokenExpiredError"
                     ? "Session expired, please login again"

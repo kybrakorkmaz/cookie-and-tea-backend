@@ -6,6 +6,7 @@ import {
     deleteExpiredReadActions,
     deleteAction,
 } from "../repositories/actions.repository.js";
+import { deleteExpiredPendingDonations } from "../repositories/donation.repository.js";
 
 const truncate = (text, maxLength = 40) => {
     if (!text) return "";
@@ -85,8 +86,12 @@ export const markAsRead = async (actionId, userId) => {
     return result[0];
 };
 
+// Daily maintenance (scheduler + /cron/purge-actions): expired read
+// notifications AND abandoned pending-donation sessions
 export const purgeExpiredReads = async () => {
-    return await deleteExpiredReadActions();
+    const actions = await deleteExpiredReadActions();
+    const pendingDonations = await deleteExpiredPendingDonations();
+    return { actions, pendingDonations };
 };
 
 export const removeAction = async (actionId, userId) => {
