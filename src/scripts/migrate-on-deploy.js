@@ -8,5 +8,8 @@ if (vercelEnv && vercelEnv !== "production") {
     process.exit(0);
 }
 
-const child = spawn(process.execPath, ["src/db/migrate.js"], { stdio: "inherit" });
+const child = spawn(process.execPath, ["src/db/migrate.js"], {
+    stdio: "inherit",
+    env: { ...process.env, NODE_ENV: "production" },
+});
 child.on("exit", (code) => process.exit(code ?? 1));
