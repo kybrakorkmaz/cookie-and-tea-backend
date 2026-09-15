@@ -157,7 +157,7 @@ export const findProfilePosts = async (userId, limit, offset) =>{
 }
 
 export const findProfilePrevComments = async (userId) => {
-    const allPostIds = await getAllProfilePostIds(userId);
+    const allPostIds = await getAllProfilePostIds(userId, 100);
     if (!allPostIds || allPostIds.length === 0) return [];
 
     return await fetchPrevCommentsForIds(allPostIds);

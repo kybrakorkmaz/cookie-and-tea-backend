@@ -190,7 +190,7 @@ export const getProfilePosts = async (userId, limit = 100, offset = 0) =>  {
         .from(posts)
         .innerJoin(users, eq(posts.userId, users.id))
         .where(eq(posts.userId, userId))
-        .orderBy(desc(posts.createdAt))
+        .orderBy(desc(posts.createdAt), desc(posts.id))
         .limit(limit)
         .offset(offset);
 }
@@ -205,11 +205,14 @@ export const countProfilePosts = async (userId) => {
 
 
 
-export const getAllProfilePostIds = async (userId) =>{
+export const getAllProfilePostIds = async (userId, limit = 100) =>{
+    const capped = Math.min(Math.max(1, limit), 100);
     return db.select({
         postId:posts.id
     }).from(posts)
         .where(eq(posts.userId, userId))
+        .orderBy(desc(posts.createdAt), desc(posts.id))
+        .limit(capped);
 }
 
 export const findFollowRelationship = async (followerId, followingId) => {
