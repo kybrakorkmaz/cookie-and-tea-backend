@@ -1,7 +1,7 @@
 // comment controller
 import {
     createCommentService,
-    deleteCommentService, fetchPrevCommentsForIds,
+    deleteCommentService,
     findAllComments,
     updateCommentService
 } from "../services/comment.service.js";
@@ -30,26 +30,16 @@ export const allCommentsController = async (req, res, next) => {
 
 export const previewCommentsController = async (req, res, next) => {
     try {
-        const userId = req.resolvedUser.id;
-        const page = req.query.page ? parseInt(req.query.page, 10) : 1;
-        const limit = req.query.limit ? parseInt(req.query.limit, 10) : 20;
-
-        if (!Number.isInteger(page) || page <= 0 || !Number.isInteger(limit) || limit <= 0 || limit > 100) {
-            return res.status(400).json({ status: "fail", message: "Invalid pagination parameters" });
-        }
-
         let comments;
-        if (req.baseUrl.includes('profile')) {
-            comments = await findProfilePrevComments(userId, page, limit);
+        if (req.baseUrl.includes("profile")) {
+            comments = await findProfilePrevComments(req.resolvedUser.id);
         } else {
-            comments = await findFeedPrevComments(userId, page, limit);
+            // Feed preview is the viewer's timeline, same as GET /feed/:username —
+            // bind to JWT identity so :username cannot IDOR another user's comments
+            comments = await findFeedPrevComments(req.user.id);
         }
 
-        if (!comments || (Array.isArray(comments) && comments.length === 0)) {
-            return res.status(404).json({ status: "fail", message: "No preview comments found" });
-        }
-
-        return res.status(200).json({ status: "success", data: comments });
+        return res.status(200).json({ status: "success", data: comments || [] });
     } catch (e) {
         next(e);
     }

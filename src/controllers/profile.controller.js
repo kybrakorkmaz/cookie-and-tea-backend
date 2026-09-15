@@ -3,13 +3,16 @@ import {
     earnedMoney,
     getIntroDashboard,
     getPanelInfo, findTwoFollowing,
-    getUserAboutInfo, updateSocialMediaList, getGalleryByUserId, findProfilePosts, findProfilePrevComments,
+    getUserAboutInfo, updateSocialMediaList, getGalleryByUserId, findProfilePosts,
     followUser,
     unfollowUser, isFollowing,
     changeProfileImage,
     changeCoverImage,
+    getFollowersForUser,
+    getFollowingForUser,
 } from "../services/profile.service.js";
 import {uploadToCloudinary} from "../config/cloudinary.js";
+import {parseOffsetLimit} from "../utils/pagination.util.js";
 
 // Shared pipeline for profile photo / cover image uploads.
 // req.file is populated by the uploadSingleImage multer middleware.
@@ -80,7 +83,7 @@ export const getUserIntro = async (req, res, next) => {
         const user = req.resolvedUser;
         const { earningTimeline, isFollower } = req.query; // Filters remain in query
 
-        const introData = await getIntroDashboard(user, earningTimeline, isFollower);
+        const introData = await getIntroDashboard(user, earningTimeline, isFollower, req.user.id);
         return res.status(200).json(introData);
     } catch (e) {
         next(e);
@@ -202,6 +205,44 @@ export const followStatus = async (req, res, next) =>{
         next(e);
     }
 }
+export const getFollowersController = async (req, res, next) => {
+    try {
+        const { limit, offset } = parseOffsetLimit(req.query, { defaultLimit: 100 });
+        const { people, total } = await getFollowersForUser(
+            req.resolvedUser,
+            req.user.id,
+            limit,
+            offset
+        );
+        return res.status(200).json({
+            status: "success",
+            data: people,
+            meta: { total, limit, offset }
+        });
+    } catch (e) {
+        next(e);
+    }
+};
+
+export const getFollowingController = async (req, res, next) => {
+    try {
+        const { limit, offset } = parseOffsetLimit(req.query, { defaultLimit: 100 });
+        const { people, total } = await getFollowingForUser(
+            req.resolvedUser,
+            req.user.id,
+            limit,
+            offset
+        );
+        return res.status(200).json({
+            status: "success",
+            data: people,
+            meta: { total, limit, offset }
+        });
+    } catch (e) {
+        next(e);
+    }
+};
+
 export const followUserController = async (req, res, next) => {
     try {
         const targetUser = req.resolvedUser;
@@ -255,8 +296,13 @@ export const getUserGallery = async (req, res, next) => {
 export const profilePostsController = async (req, res, next) => {
     try{
         const user = req.resolvedUser;
-        const allPostData = await findProfilePosts(user.id);
-        return res.status(200).json({status: "success", data: allPostData});
+        const { limit, offset } = parseOffsetLimit(req.query, { defaultLimit: 100 });
+        const { posts, total } = await findProfilePosts(user.id, limit, offset);
+        return res.status(200).json({
+            status: "success",
+            data: posts,
+            meta: { total, limit, offset }
+        });
     }catch (e){
         next(e);
     }

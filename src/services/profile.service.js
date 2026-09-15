@@ -6,13 +6,18 @@ import {
     latestTwoFollowers,
     latestTwoFollowing,
     topSupportedTwoPosts, updateSocialMediaById,
-    getImagesByUserId, getProfilePosts, getAllProfilePostIds,
+    getImagesByUserId, getProfilePosts, countProfilePosts, getAllProfilePostIds,
     findFollowRelationship,
     insertFollow,
     removeFollow,
+    findFollowersByUserId,
+    findFollowingByUserId,
+    countFollowersByUserId,
+    countFollowingByUserId,
+    findFollowingIdsAmong,
 } from "../repositories/profile.repository.js";
 
-import {fetchPrevCommentsForIds} from "./comment.service.js";
+import {attachPreviewComments, fetchPrevCommentsForIds} from "./comment.service.js";
 import { notifyFollow } from "./actions.service.js";
 
 export const getPanelInfo = async (user) =>{
@@ -26,11 +31,13 @@ export const getPanelInfo = async (user) =>{
     };
 };
 
-export const getIntroDashboard = async (user, timelineDays, isFollowerView) =>{
+export const getIntroDashboard = async (user, timelineDays, isFollowerView, viewerId) =>{
+    const isOwner = viewerId === user.id;
+
     // Execute unrelated DB tasks concurrently in parallel routines
     const [socialsList, earningData, topPosts] = await Promise.all([
         findSocialsByUserId(user.id),
-        getUserEarningsById(user.id, timelineDays),
+        isOwner ? getUserEarningsById(user.id, timelineDays) : Promise.resolve(null),
         topSupportedTwoPosts(user.id)
     ]);
 
@@ -44,7 +51,7 @@ export const getIntroDashboard = async (user, timelineDays, isFollowerView) =>{
     return{
         about: user.about || "",
         socials: socialsList || [],
-        earningsTotal: earningData.total ?? 0,
+        ...(isOwner ? { earningsTotal: earningData.total ?? 0 } : {}),
         topSupportedPosts: topPosts || [],
         recentConnections: connectionProfiles || []
     }
@@ -105,18 +112,9 @@ export const changeCoverImage = async (user, imageUrl) => {
     return saveUserImage(user.id, { backgroundImage: imageUrl });
 }
 export const findTwoFollowing = async (user, isFollow) =>{
-    if(isFollow) return []; // Explicitly return empty array payload instead of breaking flow
+    if(isFollow) return [];
 
-    const  response = await  latestTwoFollowing(user.id)
-
-    if(!response || response.length <=0){
-        const error = new Error(`No one is followed.`);
-        error.statusCode = 400;
-        error.code = 'NO_OP';
-        throw error;
-    }
-
-    return response;
+    return await latestTwoFollowing(user.id) || [];
 }
 
 export const getTwoFollowers = async (user) =>{
@@ -144,37 +142,52 @@ export const getGalleryByUserId = async (user) => {
     };
 };
 
-export const findProfilePosts = async (userId) =>{
-    const userPosts= await getProfilePosts(userId);
+export const findProfilePosts = async (userId, limit, offset) =>{
+    const [userPosts, total] = await Promise.all([
+        getProfilePosts(userId, limit, offset),
+        countProfilePosts(userId),
+    ]);
     if (!userPosts || userPosts.length <= 0) {
-        return [];
+        return { posts: [], total };
     }
 
-    // Fetch preview comments (up to 2 per post) and attach
     const postIds = userPosts.map(p => p.id);
-    const rawComments = await fetchPrevCommentsForIds(postIds, 1, postIds.length * 2);
-
-    const commentsByPost = (rawComments || []).reduce((acc, c) => {
-        const pid = c.postId || c.post_id || c.postId;
-        if (!pid) return acc;
-        if (!acc[pid]) acc[pid] = [];
-        acc[pid].push(c);
-        return acc;
-    }, {});
-
-    return userPosts.map(post => ({
-        ...post,
-        previewComments: (commentsByPost[post.id] || []).slice(0,2)
-    }));
+    const rawComments = await fetchPrevCommentsForIds(postIds);
+    return { posts: attachPreviewComments(userPosts, rawComments), total };
 }
 
-export const findProfilePrevComments = async (userId, page = 1, limit = 20) => {
-    // Get IDs from your posts repository
-    const allPostIds = await getAllProfilePostIds(userId);
+export const findProfilePrevComments = async (userId) => {
+    const allPostIds = await getAllProfilePostIds(userId, 100);
     if (!allPostIds || allPostIds.length === 0) return [];
 
-    // Fetch comments using the repo
-    return await fetchPrevCommentsForIds(allPostIds, page, limit);
+    return await fetchPrevCommentsForIds(allPostIds);
+};
+
+const mapPeopleWithFollowState = async (people, viewerId) => {
+    const candidateIds = (people ?? [])
+        .map((person) => person.id)
+        .filter((id) => id !== viewerId);
+    const followingSet = new Set(await findFollowingIdsAmong(viewerId, candidateIds));
+    return (people ?? []).map((person) => ({
+        ...person,
+        isFollowing: person.id !== viewerId && followingSet.has(person.id),
+    }));
+};
+
+export const getFollowersForUser = async (profileUser, viewerId, limit, offset) => {
+    const [people, total] = await Promise.all([
+        findFollowersByUserId(profileUser.id, limit, offset),
+        countFollowersByUserId(profileUser.id),
+    ]);
+    return { people: await mapPeopleWithFollowState(people, viewerId), total };
+};
+
+export const getFollowingForUser = async (profileUser, viewerId, limit, offset) => {
+    const [people, total] = await Promise.all([
+        findFollowingByUserId(profileUser.id, limit, offset),
+        countFollowingByUserId(profileUser.id),
+    ]);
+    return { people: await mapPeopleWithFollowState(people, viewerId), total };
 };
 
 export const isFollowing = async (follower, targetUser) =>{

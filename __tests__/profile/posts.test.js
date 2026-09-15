@@ -43,18 +43,27 @@ describe("Profile Posts Integration Suite", () => {
         expect(response.body.data).toEqual([]);
     });
 
-    it("should get user posts", async () => {
-        // Create a post first to avoid 204
+    it("should paginate profile posts", async () => {
+        await generateTestPost(testUser.id);
         await generateTestPost(testUser.id);
 
-        const response = await request(app)
+        const firstPage = await request(app)
             .get(`/api/v1/profile/${testUser.username}/posts`)
+            .query({ limit: 1, offset: 0 })
             .set("Cookie", [`token=${authToken}`]);
 
-        expect(response.status).toBe(200);
-        expect(response.body.status).toBe("success");
-        expect(Array.isArray(response.body.data)).toBe(true);
-        expect(response.body.data.length).toBeGreaterThan(0);
+        const secondPage = await request(app)
+            .get(`/api/v1/profile/${testUser.username}/posts`)
+            .query({ limit: 1, offset: 1 })
+            .set("Cookie", [`token=${authToken}`]);
+
+        expect(firstPage.status).toBe(200);
+        expect(secondPage.status).toBe(200);
+        expect(firstPage.body.data).toHaveLength(1);
+        expect(secondPage.body.data).toHaveLength(1);
+        expect(firstPage.body.data[0].id).not.toBe(secondPage.body.data[0].id);
+        expect(firstPage.body.meta).toEqual({ total: 2, limit: 1, offset: 0 });
+        expect(secondPage.body.meta).toEqual({ total: 2, limit: 1, offset: 1 });
     });
     //todo create user post
     it("should update user post", async () =>{

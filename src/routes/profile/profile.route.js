@@ -3,6 +3,8 @@ import {
     getUserPanel,  profilePostsController,
     followUserController,
     unfollowUserController,
+    getFollowersController,
+    getFollowingController,
     uploadProfilePhotoController,
     uploadCoverImageController,
 } from "../../controllers/profile.controller.js";
@@ -13,6 +15,7 @@ import {
 import {authenticateToken} from "../../middleware/auth.js";
 import {resolveGlobalUsername} from "../../middleware/resolveUser.js";
 import {uploadSingleImage} from "../../middleware/multer.middleware.js";
+import {followLimiter} from "../../middleware/rateLimit.middleware.js";
 import profileIntroRouter from "./intro.route.js";
 import profileGalleryRouter from "./gallery.route.js";
 import postsRoute from "../posts.route.js";
@@ -48,8 +51,10 @@ router.get("/:username/posts/preview", previewCommentsController);
 // Handles nested modification actions (PUT /:id, DELETE /:id) via your postsRoute
 router.use("/:username/posts", postsRoute);
 
-router.post("/:username/follow", followUserController);
-router.delete("/:username/follow", unfollowUserController);
+router.post("/:username/follow", followLimiter, followUserController);
+router.delete("/:username/follow", followLimiter, unfollowUserController);
+router.get("/:username/followers", getFollowersController);
+router.get("/:username/following", getFollowingController);
 
 // Generic Catch-all Parameter (MUST BE LAST)
 // If the URL is just "/alice", it doesn't match the specific sub-routes or /posts, so it lands here safely.

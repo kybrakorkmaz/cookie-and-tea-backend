@@ -1,5 +1,6 @@
 // feed controller
-import {addNewPost, getFeedTimeline} from "../services/feed.service.js";
+import {addNewPost, getFeedTimeline, countFeedTimeline} from "../services/feed.service.js";
+import {parseOffsetLimit} from "../utils/pagination.util.js";
 
 import {uploadToCloudinary} from "../config/cloudinary.js";
 export const getFeedTimelineController = async (req, res, next) =>{
@@ -8,15 +9,17 @@ export const getFeedTimelineController = async (req, res, next) =>{
         // must be bound to the JWT identity — not the :username path param
         // (resolveGlobalUsername would otherwise let anyone read another user's feed)
         const user = req.user;
+        const { limit, offset } = parseOffsetLimit(req.query);
 
-        const limit = parseInt(req.query.limit, 10) || 5;
-        const offset = parseInt(req.query.offset, 10) || 0;
-
-        const feed = await getFeedTimeline(user.id, limit, offset);
+        const [feed, total] = await Promise.all([
+            getFeedTimeline(user.id, limit, offset),
+            countFeedTimeline(user.id),
+        ]);
 
         res.status(200).json({
             status: "success",
-            data: feed
+            data: feed,
+            meta: { total, limit, offset }
         });
     }catch (e){
         next(e);
