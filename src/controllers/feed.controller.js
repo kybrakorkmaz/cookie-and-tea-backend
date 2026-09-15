@@ -9,8 +9,14 @@ export const getFeedTimelineController = async (req, res, next) =>{
         // (resolveGlobalUsername would otherwise let anyone read another user's feed)
         const user = req.user;
 
-        const limit = parseInt(req.query.limit, 10) || 5;
-        const offset = parseInt(req.query.offset, 10) || 0;
+        const parsedLimit = parseInt(req.query.limit, 10);
+        const parsedOffset = parseInt(req.query.offset, 10);
+        const limit = Number.isInteger(parsedLimit) && parsedLimit > 0
+            ? Math.min(parsedLimit, 100)
+            : 5;
+        const offset = Number.isInteger(parsedOffset) && parsedOffset >= 0
+            ? parsedOffset
+            : 0;
 
         const [feed, total] = await Promise.all([
             getFeedTimeline(user.id, limit, offset),

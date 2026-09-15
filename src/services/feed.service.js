@@ -16,7 +16,7 @@ export const getFeedTimeline = async (userId, limit, offset) =>{
     // Fetch preview comments for the returned posts (up to 2 per post)
     const postIds = allUsersPosts.map(p => p.id);
     // Request limit: allow up to 2 comments per post
-    const rawComments = await fetchPrevCommentsForIds(postIds, 1, postIds.length * 2);
+    const rawComments = await fetchPrevCommentsForIds(postIds);
 
     const commentsByPost = (rawComments || []).reduce((acc, c) => {
         const pid = Number(c.postId ?? c.post_id);
@@ -62,5 +62,5 @@ export const findFeedPrevComments = async (userId, page = 1, limit = 20) =>{
     if (!allPostIds || allPostIds.length === 0) return [];
 
     // 2. Fetch comments using the repo
-    return await fetchPrevCommentsForIds(allPostIds, page, limit);
+    return await fetchPrevCommentsForIds(allPostIds);
 }

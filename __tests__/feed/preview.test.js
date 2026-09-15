@@ -2,7 +2,6 @@ import {afterAll, beforeAll, describe, expect, it} from "@jest/globals";
 import {generateTestComment, generateTestPost, getPost, purgeTestUsers, seedTestUser} from "../utils/testDb.util.js";
 import jwt from "jsonwebtoken";
 import { ENV } from "../../env.js";
-import { sql } from "../../src/db/client.js";
 import request from "supertest";
 import app from "../../src/servers/app.js";
 

@@ -155,7 +155,7 @@ export const findProfilePosts = async (userId) =>{
 
     // Fetch preview comments (up to 2 per post) and attach
     const postIds = userPosts.map(p => p.id);
-    const rawComments = await fetchPrevCommentsForIds(postIds, 1, postIds.length * 2);
+    const rawComments = await fetchPrevCommentsForIds(postIds);
 
     const commentsByPost = (rawComments || []).reduce((acc, c) => {
         const pid = Number(c.postId ?? c.post_id);
@@ -177,7 +177,7 @@ export const findProfilePrevComments = async (userId, page = 1, limit = 20) => {
     if (!allPostIds || allPostIds.length === 0) return [];
 
     // Fetch comments using the repo
-    return await fetchPrevCommentsForIds(allPostIds, page, limit);
+    return await fetchPrevCommentsForIds(allPostIds);
 };
 
 export const getFollowersForUser = async (profileUser, viewerId) => {
@@ -186,7 +186,7 @@ export const getFollowersForUser = async (profileUser, viewerId) => {
         findFollowingIds(viewerId),
     ]);
     const followingSet = new Set(viewerFollowingIds);
-    return people.map((person) => ({
+    return (people ?? []).map((person) => ({
         ...person,
         isFollowing: person.id !== viewerId && followingSet.has(person.id),
     }));
@@ -198,7 +198,7 @@ export const getFollowingForUser = async (profileUser, viewerId) => {
         findFollowingIds(viewerId),
     ]);
     const followingSet = new Set(viewerFollowingIds);
-    return people.map((person) => ({
+    return (people ?? []).map((person) => ({
         ...person,
         isFollowing: person.id !== viewerId && followingSet.has(person.id),
     }));
