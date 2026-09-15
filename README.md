@@ -146,6 +146,7 @@ See [`.env.example`](.env.example) for the annotated template. Essentials:
 | `IYZICO_API_KEY` / `IYZICO_SECRET_KEY` / `IYZICO_BASE_URL` | Payments (sandbox values for dev) |
 | `CRON_SECRET` | Bearer token guarding `/api/v1/cron/*` |
 | `BYPASS_SECRET` | Test-only header secret for auto-verifying signups |
+| `MOCK_IYZICO` | `true` simulates the İyzico 3DS flow (demo). Must be set on Vercel, not only locally. |
 
 > Note: env vars are validated with Zod at boot — the server refuses to start with a missing/invalid configuration instead of failing later at runtime.
 
@@ -177,10 +178,12 @@ Jest + Supertest run against a dedicated Dockerized Postgres so tests never touc
 
 ### Deployment (Vercel + Neon)
 
-- `app.js` at the repo root exports the Express app as the serverless entrypoint
+- `app.js` at the repo root exports the Express app as the serverless entrypoint. Vercel does **not** run `npm start`, so `db:migrate` is not applied by the start script.
+- Production deploys run `node src/scripts/migrate-on-deploy.js` as the Vercel build command (skipped on preview deploys so they cannot mutate prod).
 - Production uses Neon's WebSocket pool (transactions don't work over the HTTP driver)
 - File logging transports are disabled on Vercel (read-only FS) — logs go to the Vercel runtime console
 - `vercel.json` registers a daily cron (`0 3 * * *`) hitting `/api/v1/cron/purge-actions`
+- Set `MOCK_IYZICO=true` in the Vercel project env for the portfolio demo (local `.env.production` is not uploaded). Boot logs a warning when mock is on in production.
 - Frontend env var `VITE_API_BASE_URL` must point at this API's origin
 
 ### Useful Scripts
