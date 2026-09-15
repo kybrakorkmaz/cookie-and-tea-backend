@@ -1,4 +1,5 @@
 {
+  "buildCommand": "node src/scripts/migrate-on-deploy.js",
   "crons": [
     {
       "path": "/api/v1/cron/purge-actions",
