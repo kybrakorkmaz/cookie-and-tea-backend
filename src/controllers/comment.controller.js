@@ -45,11 +45,7 @@ export const previewCommentsController = async (req, res, next) => {
             comments = await findFeedPrevComments(userId, page, limit);
         }
 
-        if (!comments || (Array.isArray(comments) && comments.length === 0)) {
-            return res.status(404).json({ status: "fail", message: "No preview comments found" });
-        }
-
-        return res.status(200).json({ status: "success", data: comments });
+        return res.status(200).json({ status: "success", data: comments || [] });
     } catch (e) {
         next(e);
     }

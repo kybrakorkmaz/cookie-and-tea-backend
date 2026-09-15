@@ -2,6 +2,7 @@
 import {
     createNewPost, getFeedPostIds,
     getFeedTimelineFromDB,
+    countFeedTimelineFromDB,
 } from "../repositories/feed.repository.js";
 import {fetchPrevCommentsForIds} from "./comment.service.js";
 
@@ -17,24 +18,23 @@ export const getFeedTimeline = async (userId, limit, offset) =>{
     // Request limit: allow up to 2 comments per post
     const rawComments = await fetchPrevCommentsForIds(postIds, 1, postIds.length * 2);
 
-    // Group comments by postId
     const commentsByPost = (rawComments || []).reduce((acc, c) => {
-        const pid = c.postId || c.post_id || c.postId;
-        if (!pid) return acc;
+        const pid = Number(c.postId ?? c.post_id);
+        if (!Number.isFinite(pid)) return acc;
         if (!acc[pid]) acc[pid] = [];
-        // Keep insertion order (assumed to be newest first from repo)
         acc[pid].push(c);
         return acc;
     }, {});
 
-    // Attach previewComments (max 2) to each post
     const postsWithPreview = allUsersPosts.map(post => ({
         ...post,
-        previewComments: (commentsByPost[post.id] || []).slice(0,2)
+        previewComments: (commentsByPost[Number(post.id)] || []).slice(0, 2)
     }));
 
     return postsWithPreview;
 }
+
+export const countFeedTimeline = (userId) => countFeedTimelineFromDB(userId);
 
 export const addNewPost = async (userId, newPostPayload) => {
     const formattedData = {

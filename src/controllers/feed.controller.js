@@ -1,5 +1,5 @@
 // feed controller
-import {addNewPost, getFeedTimeline} from "../services/feed.service.js";
+import {addNewPost, getFeedTimeline, countFeedTimeline} from "../services/feed.service.js";
 
 import {uploadToCloudinary} from "../config/cloudinary.js";
 export const getFeedTimelineController = async (req, res, next) =>{
@@ -12,11 +12,15 @@ export const getFeedTimelineController = async (req, res, next) =>{
         const limit = parseInt(req.query.limit, 10) || 5;
         const offset = parseInt(req.query.offset, 10) || 0;
 
-        const feed = await getFeedTimeline(user.id, limit, offset);
+        const [feed, total] = await Promise.all([
+            getFeedTimeline(user.id, limit, offset),
+            countFeedTimeline(user.id),
+        ]);
 
         res.status(200).json({
             status: "success",
-            data: feed
+            data: feed,
+            meta: { total, limit, offset }
         });
     }catch (e){
         next(e);

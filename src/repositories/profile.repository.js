@@ -69,8 +69,42 @@ export const latestTwoFollowing = async (userId) =>{
         .innerJoin(users, eq(users.id, follows.followingId))
         .where(eq(follows.followerId, userId))
         .orderBy(desc(follows.createdAt))
-        .limit(2)
+        .limit(2);
 }
+
+export const findFollowersByUserId = async (userId) => {
+    return db.select({
+        id: users.id,
+        name: users.name,
+        username: users.username,
+        profileImage: users.profileImage
+    })
+        .from(follows)
+        .innerJoin(users, eq(follows.followerId, users.id))
+        .where(eq(follows.followingId, userId))
+        .orderBy(desc(follows.createdAt));
+};
+
+export const findFollowingByUserId = async (userId) => {
+    return db.select({
+        id: users.id,
+        name: users.name,
+        username: users.username,
+        profileImage: users.profileImage
+    }).from(follows)
+        .innerJoin(users, eq(users.id, follows.followingId))
+        .where(eq(follows.followerId, userId))
+        .orderBy(desc(follows.createdAt));
+};
+
+export const findFollowingIds = async (userId) => {
+    const rows = await db
+        .select({ followingId: follows.followingId })
+        .from(follows)
+        .where(eq(follows.followerId, userId));
+    return rows.map((row) => row.followingId);
+};
+
 export const updateSocialMediaById = async (userId, socialsList) => {
     // Full transaction loop wiping old records and bulk-inserting new array lists
     return db.transaction(async (tx) => {

@@ -32,12 +32,14 @@ describe("Feed Preview Comments Integration", () =>{
         }
     });
 
-    it("should return 404 when no preview comments exist on feed", async ()=>{
+    it("should return an empty list when no preview comments exist on feed", async ()=>{
         const response = await request(app)
             .get(`/api/v1/feed/${testUser.username}/preview`)
             .set("Cookie", [`token=${authToken}`]);
 
-        expect(response.status).toBe(404);
+        expect(response.status).toBe(200);
+        expect(response.body.status).toBe("success");
+        expect(response.body.data).toEqual([]);
     });
 
     it("should return preview comments for feed when exist", async ()=>{

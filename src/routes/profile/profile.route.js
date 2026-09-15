@@ -3,6 +3,8 @@ import {
     getUserPanel,  profilePostsController,
     followUserController,
     unfollowUserController,
+    getFollowersController,
+    getFollowingController,
     uploadProfilePhotoController,
     uploadCoverImageController,
 } from "../../controllers/profile.controller.js";
@@ -50,6 +52,8 @@ router.use("/:username/posts", postsRoute);
 
 router.post("/:username/follow", followUserController);
 router.delete("/:username/follow", unfollowUserController);
+router.get("/:username/followers", getFollowersController);
+router.get("/:username/following", getFollowingController);
 
 // Generic Catch-all Parameter (MUST BE LAST)
 // If the URL is just "/alice", it doesn't match the specific sub-routes or /posts, so it lands here safely.

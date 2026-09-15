@@ -8,6 +8,8 @@ import {
     unfollowUser, isFollowing,
     changeProfileImage,
     changeCoverImage,
+    getFollowersForUser,
+    getFollowingForUser,
 } from "../services/profile.service.js";
 import {uploadToCloudinary} from "../config/cloudinary.js";
 
@@ -202,6 +204,24 @@ export const followStatus = async (req, res, next) =>{
         next(e);
     }
 }
+export const getFollowersController = async (req, res, next) => {
+    try {
+        const people = await getFollowersForUser(req.resolvedUser, req.user.id);
+        return res.status(200).json({ status: "success", data: people });
+    } catch (e) {
+        next(e);
+    }
+};
+
+export const getFollowingController = async (req, res, next) => {
+    try {
+        const people = await getFollowingForUser(req.resolvedUser, req.user.id);
+        return res.status(200).json({ status: "success", data: people });
+    } catch (e) {
+        next(e);
+    }
+};
+
 export const followUserController = async (req, res, next) => {
     try {
         const targetUser = req.resolvedUser;

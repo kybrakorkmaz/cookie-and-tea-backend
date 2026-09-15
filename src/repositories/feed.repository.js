@@ -1,6 +1,6 @@
 import { db } from "../db/client.js";
 import { follows, posts, users } from "../db/schema/index.js";
-import { desc, eq, inArray, or } from "drizzle-orm";
+import { desc, eq, inArray, or, count } from "drizzle-orm";
 
 // Feed Page: Authorized user posts + posts of people that user follows with strict pagination controls
 export const getFeedTimelineFromDB = async (userId, limit = 5, offset = 0) => {
@@ -31,6 +31,20 @@ export const getFeedTimelineFromDB = async (userId, limit = 5, offset = 0) => {
         .orderBy(desc(posts.createdAt))
         .limit(limit)
         .offset(offset);
+};
+
+export const countFeedTimelineFromDB = async (userId) => {
+    const followedUserIds = db
+        .select({ followingId: follows.followingId })
+        .from(follows)
+        .where(eq(follows.followerId, userId));
+
+    const [row] = await db
+        .select({ total: count() })
+        .from(posts)
+        .where(or(eq(posts.userId, userId), inArray(posts.userId, followedUserIds)));
+
+    return Number(row?.total ?? 0);
 };
 
 export const createNewPost = async (postData) => {

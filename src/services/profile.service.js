@@ -10,6 +10,9 @@ import {
     findFollowRelationship,
     insertFollow,
     removeFollow,
+    findFollowersByUserId,
+    findFollowingByUserId,
+    findFollowingIds,
 } from "../repositories/profile.repository.js";
 
 import {fetchPrevCommentsForIds} from "./comment.service.js";
@@ -155,8 +158,8 @@ export const findProfilePosts = async (userId) =>{
     const rawComments = await fetchPrevCommentsForIds(postIds, 1, postIds.length * 2);
 
     const commentsByPost = (rawComments || []).reduce((acc, c) => {
-        const pid = c.postId || c.post_id || c.postId;
-        if (!pid) return acc;
+        const pid = Number(c.postId ?? c.post_id);
+        if (!Number.isFinite(pid)) return acc;
         if (!acc[pid]) acc[pid] = [];
         acc[pid].push(c);
         return acc;
@@ -164,7 +167,7 @@ export const findProfilePosts = async (userId) =>{
 
     return userPosts.map(post => ({
         ...post,
-        previewComments: (commentsByPost[post.id] || []).slice(0,2)
+        previewComments: (commentsByPost[Number(post.id)] || []).slice(0, 2)
     }));
 }
 
@@ -175,6 +178,30 @@ export const findProfilePrevComments = async (userId, page = 1, limit = 20) => {
 
     // Fetch comments using the repo
     return await fetchPrevCommentsForIds(allPostIds, page, limit);
+};
+
+export const getFollowersForUser = async (profileUser, viewerId) => {
+    const [people, viewerFollowingIds] = await Promise.all([
+        findFollowersByUserId(profileUser.id),
+        findFollowingIds(viewerId),
+    ]);
+    const followingSet = new Set(viewerFollowingIds);
+    return people.map((person) => ({
+        ...person,
+        isFollowing: person.id !== viewerId && followingSet.has(person.id),
+    }));
+};
+
+export const getFollowingForUser = async (profileUser, viewerId) => {
+    const [people, viewerFollowingIds] = await Promise.all([
+        findFollowingByUserId(profileUser.id),
+        findFollowingIds(viewerId),
+    ]);
+    const followingSet = new Set(viewerFollowingIds);
+    return people.map((person) => ({
+        ...person,
+        isFollowing: person.id !== viewerId && followingSet.has(person.id),
+    }));
 };
 
 export const isFollowing = async (follower, targetUser) =>{
