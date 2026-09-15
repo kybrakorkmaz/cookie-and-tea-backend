@@ -43,18 +43,20 @@ describe("Profile Posts Integration Suite", () => {
         expect(response.body.data).toEqual([]);
     });
 
-    it("should get user posts", async () => {
-        // Create a post first to avoid 204
+    it("should paginate profile posts", async () => {
+        await generateTestPost(testUser.id);
         await generateTestPost(testUser.id);
 
         const response = await request(app)
             .get(`/api/v1/profile/${testUser.username}/posts`)
+            .query({ limit: 1, offset: 0 })
             .set("Cookie", [`token=${authToken}`]);
 
         expect(response.status).toBe(200);
-        expect(response.body.status).toBe("success");
-        expect(Array.isArray(response.body.data)).toBe(true);
-        expect(response.body.data.length).toBeGreaterThan(0);
+        expect(response.body.data).toHaveLength(1);
+        expect(response.body.meta.limit).toBe(1);
+        expect(response.body.meta.offset).toBe(0);
+        expect(response.body.meta.total).toBeGreaterThanOrEqual(1);
     });
     //todo create user post
     it("should update user post", async () =>{

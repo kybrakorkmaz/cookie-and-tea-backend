@@ -1,6 +1,6 @@
 import {db} from "../db/client.js";
 import {follows, posts, socials, users} from "../db/schema/index.js";
-import {and, desc, eq, gte, inArray, sql} from "drizzle-orm";
+import {and, count, desc, eq, gte, inArray, sql} from "drizzle-orm";
 
 export const findSocialsByUserId = async (userId) => {
     return db.select({
@@ -72,36 +72,58 @@ export const latestTwoFollowing = async (userId) =>{
         .limit(2);
 }
 
-export const findFollowersByUserId = async (userId) => {
-    return db.select({
-        id: users.id,
-        name: users.name,
-        username: users.username,
-        profileImage: users.profileImage
-    })
+const peopleSelect = {
+    id: users.id,
+    name: users.name,
+    username: users.username,
+    profileImage: users.profileImage
+};
+
+export const findFollowersByUserId = async (userId, limit = 100, offset = 0) => {
+    return db.select(peopleSelect)
         .from(follows)
         .innerJoin(users, eq(follows.followerId, users.id))
         .where(eq(follows.followingId, userId))
-        .orderBy(desc(follows.createdAt));
+        .orderBy(desc(follows.createdAt))
+        .limit(limit)
+        .offset(offset);
 };
 
-export const findFollowingByUserId = async (userId) => {
-    return db.select({
-        id: users.id,
-        name: users.name,
-        username: users.username,
-        profileImage: users.profileImage
-    }).from(follows)
+export const countFollowersByUserId = async (userId) => {
+    const [row] = await db
+        .select({ total: count() })
+        .from(follows)
+        .where(eq(follows.followingId, userId));
+    return Number(row?.total ?? 0);
+};
+
+export const findFollowingByUserId = async (userId, limit = 100, offset = 0) => {
+    return db.select(peopleSelect)
+        .from(follows)
         .innerJoin(users, eq(users.id, follows.followingId))
         .where(eq(follows.followerId, userId))
-        .orderBy(desc(follows.createdAt));
+        .orderBy(desc(follows.createdAt))
+        .limit(limit)
+        .offset(offset);
 };
 
-export const findFollowingIds = async (userId) => {
+export const countFollowingByUserId = async (userId) => {
+    const [row] = await db
+        .select({ total: count() })
+        .from(follows)
+        .where(eq(follows.followerId, userId));
+    return Number(row?.total ?? 0);
+};
+
+export const findFollowingIdsAmong = async (viewerId, candidateIds) => {
+    if (!candidateIds?.length) return [];
     const rows = await db
         .select({ followingId: follows.followingId })
         .from(follows)
-        .where(eq(follows.followerId, userId));
+        .where(and(
+            eq(follows.followerId, viewerId),
+            inArray(follows.followingId, candidateIds)
+        ));
     return rows.map((row) => row.followingId);
 };
 
@@ -148,7 +170,7 @@ export const getImagesByUserId = async (userId) =>{
 }
 
 // Profile page: Authorized user's posts
-export const getProfilePosts = async (userId) =>  {
+export const getProfilePosts = async (userId, limit = 100, offset = 0) =>  {
     return db
         .select({
             id: posts.id,
@@ -168,7 +190,17 @@ export const getProfilePosts = async (userId) =>  {
         .from(posts)
         .innerJoin(users, eq(posts.userId, users.id))
         .where(eq(posts.userId, userId))
-        .orderBy(desc(posts.createdAt));
+        .orderBy(desc(posts.createdAt))
+        .limit(limit)
+        .offset(offset);
+}
+
+export const countProfilePosts = async (userId) => {
+    const [row] = await db
+        .select({ total: count() })
+        .from(posts)
+        .where(eq(posts.userId, userId));
+    return Number(row?.total ?? 0);
 }
 
 

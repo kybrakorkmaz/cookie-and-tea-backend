@@ -30,6 +30,21 @@ export const fetchPrevCommentsForIds = async (postIds) => {
     return await findPrevComments(postIds);
 };
 
+export const attachPreviewComments = (posts, rawComments) => {
+    const commentsByPost = (rawComments || []).reduce((acc, c) => {
+        const pid = Number(c.postId ?? c.post_id);
+        if (!Number.isFinite(pid)) return acc;
+        if (!acc[pid]) acc[pid] = [];
+        acc[pid].push(c);
+        return acc;
+    }, {});
+
+    return posts.map((post) => ({
+        ...post,
+        previewComments: (commentsByPost[Number(post.id)] || []).slice(0, 2)
+    }));
+};
+
 export const findAllComments = async (postId, page = 1, limit = 20) =>{
     if (!postId) {
         const error = new Error("Bad request!, Empty Post Id");

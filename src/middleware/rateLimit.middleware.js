@@ -26,6 +26,16 @@ export const donateLimiter = rateLimit({
     message: tooMany,
 });
 
+// Follow / unfollow — modest cap so a session cannot spam graph writes
+export const followLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 30,
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: skipInTests,
+    message: tooMany,
+});
+
 // Unauthenticated client log sink — keep it useful but unspammable
 export const logLimiter = rateLimit({
     windowMs: 60 * 1000,

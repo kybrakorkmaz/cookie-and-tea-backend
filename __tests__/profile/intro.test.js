@@ -99,6 +99,31 @@ describe("Profile Integration Suite with Live Test DB", ()=>{
             expect(Array.isArray(response.body.recentConnections)).toBe(true);
             expect(response.body.recentConnections[0].username).toBe(`test_follower_${uniqueId}`);
         });
+
+        it("should omit earningsTotal when a non-owner views the intro", async () => {
+            const followerAgent = await createAuthenticatedAgent(
+                app,
+                testFollower.username,
+                rawPassword
+            );
+
+            const response = await followerAgent
+                .get(`/api/v1/profile/${testUser.username}/intro`)
+                .query({ earningTimeline: "30", isFollower: "true" });
+
+            expect(response.status).toBe(200);
+            expect(response.body).not.toHaveProperty("earningsTotal");
+            expect(response.body.about).toBe("Full-Stack Software Developer");
+        });
+    });
+
+    describe("GET /api/v1/profile/:username/intro/follow", () => {
+        it("should return an empty list when the owner follows nobody", async () => {
+            const response = await authedAgent.get(`/api/v1/profile/${testUser.username}/intro/follow`);
+
+            expect(response.status).toBe(200);
+            expect(response.body.follow).toEqual([]);
+        });
     });
 
     // --- TEST SUITE FOR INTRO UPDATES (about / socials) ---

@@ -58,5 +58,26 @@ describe("Feed Preview Comments Integration", () =>{
         expect(response.body.data[0]).toHaveProperty("postId");
         expect(response.body.data[0]).toHaveProperty("comment");
     });
+
+    it("should ignore :username and only return the JWT viewer's feed comments", async () => {
+        await generateTestPost(testUser.id);
+        const ownPostRows = await getPost(testUser.id);
+        await generateTestComment(testUser.id, ownPostRows[0].id, "ALICE_FEED_COMMENT");
+
+        const otherUser = await seedTestUser({}, "active");
+        await generateTestPost(otherUser.id);
+        const otherPostRows = await getPost(otherUser.id);
+        await generateTestComment(otherUser.id, otherPostRows[0].id, "BOB_ONLY_COMMENT");
+
+        const response = await request(app)
+            .get(`/api/v1/feed/${otherUser.username}/preview`)
+            .set("Cookie", [`token=${authToken}`]);
+
+        expect(response.status).toBe(200);
+        expect(response.body.status).toBe("success");
+        const comments = (response.body.data || []).map((row) => row.comment);
+        expect(comments).toContain("ALICE_FEED_COMMENT");
+        expect(comments).not.toContain("BOB_ONLY_COMMENT");
+    });
 });
 
